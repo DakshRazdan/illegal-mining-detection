@@ -24,6 +24,6 @@ COPY . .
 # Pre-create dirs the app expects at runtime
 RUN mkdir -p data/temporal results/demo config/lease_boundaries
 
-EXPOSE 8080
+EXPOSE 8000
 
-CMD ["uvicorn", "src.dispatch.dashboard_api:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "src.dispatch.dashboard_api:app", "--host", "0.0.0.0", "--port", "8000"]
