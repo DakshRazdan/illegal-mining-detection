@@ -36,3 +36,22 @@ Format: `[DATE TIME] — [Agent Name]`
 - Task completed: Phase 4 & Phase 5 Execution (Link, Architect, Stylize, Trigger)
 - Files created/modified: `src/ingest/sentinel2.py`, `src/ingest/sentinel1.py`, `src/preprocess/cloud_mask.py`, `src/verify/lease_check.py`, `src/verify/ec_check.py`, `src/verify/risk_score.py`, `src/verify/verifier.py`, `src/detect/unet_detect.py`, `src/detect/yolo_detect.py`, `src/detect/ensemble.py`, `src/dispatch/dashboard_api.py`, `dashboard/templates/index.html`, `dashboard/static/style.css`, `dashboard/static/script.js`, `README.md`
 - Next recommended task: Hackathon Submission!
+
+---
+
+## [2026-03-31 15:05 IST] — Gemini
+
+- Task completed: Fixed Folium map UI anomalies (tiles, custom legend, header styling, marker opacity)
+- Files modified: `dashboard/map.py`
+
+---
+
+## [2026-03-31 15:30 IST] — Gemini
+
+- Task completed: Integrated Planetary Computer Temporal Slider & Light Theme Pivot
+- Feature details: 
+  - Dynamic fetching of Sentinel-2 NDVI composites across 12 periods.
+  - Injected Leaflet `L.imageOverlay` opacity scrubbing into the Folium map.
+  - Implemented Light Mode base theme (`light_all`) with optimized marker contrast.
+  - Refactored header to prevent CSS/JS text selection bugs.
+- Files created/modified: `src/ingest/temporal_fetch.py`, `scripts/prefetch_temporal.py`, `src/dispatch/dashboard_api.py`, `dashboard/map.py`
