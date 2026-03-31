@@ -36,7 +36,7 @@
                     <circle cx="7" cy="5" r="3" stroke="#aaa" stroke-width="1.2" />
                     <path d="M1 13c0-3 2.7-5 6-5s6 2 6 5" stroke="#aaa" stroke-width="1.2" stroke-linecap="round" />
                 </svg>
-                ISRO OPERATOR
+                OpenMine OPS
             </div>
         </div>
     </header>
@@ -47,7 +47,7 @@
         <!-- ───────────── LEFT SIDEBAR ───────────── -->
         <aside class="sidebar-left">
             <nav class="nav-list">
-                <a class="nav-item active" href="#" data-page="dashboard">
+                <a class="nav-item active" href="#" data-page="dashboard" onclick="switchNav('dashboard',this)">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
                         <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
@@ -56,7 +56,7 @@
                     </svg>
                     Dashboard
                 </a>
-                <a class="nav-item" href="#" data-page="alerts">
+                <a class="nav-item" href="#" data-page="alerts" onclick="switchNav('alerts',this)">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M8 1.5A4.5 4.5 0 013.5 6v3.5H2v1h12v-1h-1.5V6A4.5 4.5 0 008 1.5z" stroke="currentColor"
                             stroke-width="1.2" />
@@ -65,14 +65,14 @@
                     Alerts
                     <span class="badge-red" id="alert-count">6</span>
                 </a>
-                <a class="nav-item" href="#" data-page="analytics">
+                <a class="nav-item" href="#" data-page="analytics" onclick="switchNav('analytics',this)">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M2 13L6 8l3 3 3-4 2-2" stroke="currentColor" stroke-width="1.2"
                             stroke-linecap="round" />
                     </svg>
                     Analytics
                 </a>
-                <a class="nav-item" href="#" data-page="reports">
+                <a class="nav-item" href="#" data-page="reports" onclick="switchNav('reports',this)">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <rect x="3" y="1" width="10" height="14" rx="1" stroke="currentColor" stroke-width="1.2" />
                         <line x1="6" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1.2" />
@@ -81,7 +81,7 @@
                     </svg>
                     Reports
                 </a>
-                <a class="nav-item" href="#" data-page="settings">
+                <a class="nav-item" href="#" data-page="settings" onclick="switchNav('settings',this)">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.2" />
                         <path
@@ -93,43 +93,44 @@
             </nav>
 
             <!-- LIVE ALERTS -->
-            <div class="side-panel" id="alerts-panel">
-                <div class="side-panel-header">
-                    <span class="side-panel-title">LIVE ALERTS</span>
-                    <span class="panel-menu">···</span>
+            <div id="left-panels">
+                <div class="side-panel" id="alerts-panel">
+                    <div class="side-panel-header">
+                        <span class="side-panel-title">LIVE ALERTS</span>
+                        <span class="panel-menu">···</span>
+                    </div>
+                    <div class="alert-list" id="alert-list">
+                        <!-- injected by JS -->
+                    </div>
                 </div>
-                <div class="alert-list" id="alert-list">
-                    <!-- injected by JS -->
-                </div>
-            </div>
 
-            <!-- SYSTEM STATUS -->
-            <div class="side-panel" style="margin-top:10px;">
-                <div class="side-panel-header">
-                    <span class="side-panel-title">SYSTEM STATUS</span>
-                </div>
-                <div class="sys-row">
-                    <span class="sys-dot green"></span>
-                    <div>
-                        <div class="sys-label">Active Satellites</div>
-                        <div class="sys-value">4 (RISAT-2B, CARTOSAT-3)</div>
+                <!-- SYSTEM STATUS -->
+                <div class="side-panel" style="margin-top:10px;">
+                    <div class="side-panel-header">
+                        <span class="side-panel-title">SYSTEM STATUS</span>
+                    </div>
+                    <div class="sys-row">
+                        <span class="sys-dot green"></span>
+                        <div>
+                            <div class="sys-label">Active Satellites</div>
+                            <div class="sys-value">4 (RISAT-2B, CARTOSAT-3)</div>
+                        </div>
+                    </div>
+                    <div class="sys-row">
+                        <span class="sys-dot amber"></span>
+                        <div>
+                            <div class="sys-label">ML Pipeline</div>
+                            <div class="sys-value" id="pipeline-status">Initialising…</div>
+                        </div>
+                    </div>
+                    <div class="sys-row">
+                        <span class="sys-dot green"></span>
+                        <div>
+                            <div class="sys-label">API Server</div>
+                            <div class="sys-value">Online · Port 5000</div>
+                        </div>
                     </div>
                 </div>
-                <div class="sys-row">
-                    <span class="sys-dot amber"></span>
-                    <div>
-                        <div class="sys-label">ML Pipeline</div>
-                        <div class="sys-value" id="pipeline-status">Initialising…</div>
-                    </div>
-                </div>
-                <div class="sys-row">
-                    <span class="sys-dot green"></span>
-                    <div>
-                        <div class="sys-label">API Server</div>
-                        <div class="sys-value">Online · Port 5000</div>
-                    </div>
-                </div>
-            </div>
         </aside>
 
         <!-- ───────────── MAP ───────────── -->
@@ -226,11 +227,9 @@
                     <canvas id="donut-chart" width="90" height="90"></canvas>
                     <div class="donut-legend">
                         <div class="donut-item"><span class="donut-dot" style="background:#f0a500;"></span>Illegal
-                            <strong id="pct-illegal">24%</strong>
-                        </div>
+                            <strong id="pct-illegal">24%</strong></div>
                         <div class="donut-item"><span class="donut-dot" style="background:#00b96b;"></span>Approved
-                            <strong id="pct-approved">76%</strong>
-                        </div>
+                            <strong id="pct-approved">76%</strong></div>
                     </div>
                 </div>
                 <div class="kpi-row" style="margin-top:8px;">
