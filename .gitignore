@@ -1,30 +1,56 @@
-# Python
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-
-# Node
-node_modules/
-.next/
-dist/
-.cache/
-
-# Env — NEVER commit secrets
+# Environment
 .env
 .env.local
-.env.production
+.env.*.local
 
-# Firebase
-.firebase/
-firebase-debug.log
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# Model weights (large binary files)
+models/unet/*.pth
+models/yolo/*.pt
+models/rf/*.pkl
+models/rf/*.joblib
+
+# Satellite data (large rasters)
+data/raw/
+data/processed/
+*.tif
+*.tiff
+*.nc
+*.hdf
+
+# Results / logs (generated)
+results/logs/
+results/demo/*.html
+results/detections/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# IDE
-.vscode/settings.json
-.idea/
+# Docker volumes (local)
+pgdata/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

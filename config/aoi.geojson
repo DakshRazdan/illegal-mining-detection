@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Jharkhand Coal Belt AOI",
+        "state": "Jharkhand",
+        "district": "Dhanbad / Bokaro / Hazaribagh",
+        "description": "Primary Area of Interest — Jharkhand coal mining belt"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [85.8, 23.5],
+          [86.2, 23.5],
+          [86.2, 23.8],
+          [85.8, 23.8],
+          [85.8, 23.5]
+        ]]
+      }
+    }
+  ]
+}

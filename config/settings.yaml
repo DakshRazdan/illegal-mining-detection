@@ -1,0 +1,79 @@
+# Detection & Scoring
+detection:
+  threshold: 0.5
+  min_area_ha: 0.5           # minimum area to report (hectares)
+  pixel_resolution_m: 60     # Sentinel-2 60m bands
+  pixel_area_ha: 0.36        # 60m * 60m = 3600 m² = 0.36 ha
+
+  weights:
+    delta_ndvi: 0.35
+    delta_bsi: 0.30
+    delta_ndwi: 0.20
+    delta_nbr: 0.15
+
+  kmeans_clusters: 4
+  cloud_cover_max: 20        # percent
+
+# Area of Interest — Jharkhand Coal Belt
+aoi:
+  name: "Jharkhand Coal Belt"
+  state: "Jharkhand"
+  bbox:
+    min_lon: 85.8
+    min_lat: 23.5
+    max_lon: 86.2
+    max_lat: 23.8
+  epsg: 32645
+
+# Satellite Data
+satellite:
+  sentinel2:
+    collection: "sentinel-2-l2a"
+    bands: ["B04", "B08", "B11", "B03"]
+    chunk_size: 512
+    before_period: "2019-01-01/2019-12-31"
+    after_period: "2023-01-01/2023-12-31"
+
+  sentinel1:
+    collection: "sentinel-1-grd"
+    polarization: ["VV", "VH"]
+    orbit: ascending
+
+# Risk Scoring
+risk:
+  thresholds:
+    critical: 80
+    high: 60
+    medium: 40
+    low: 0
+  outside_lease_penalty: 40  # added to base score if outside any lease
+  no_ec_penalty: 30          # added if no environmental clearance found
+  freshwater_penalty: 20     # added if within 500m of water body
+
+# Database
+database:
+  geojson_fallback: true     # use GeoJSON files if PostGIS unavailable
+  lease_boundaries_path: "config/lease_boundaries"
+  ec_records_path: "config/ec_records.json"
+  land_records_path: "config/land_records.json"
+
+# Alerts
+alerts:
+  whatsapp_enabled: false    # set true with valid Twilio creds
+  sms_enabled: false
+  console_print: true        # always print to console
+
+# Dashboard
+dashboard:
+  host: "0.0.0.0"
+  port: 5000
+  output_dir: "results/demo"
+  map_center: [23.65, 86.0]
+  map_zoom: 11
+  tile_layer: "CartoDB dark_matter"
+
+# Logging
+logging:
+  level: "INFO"
+  log_dir: "results/logs"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {module}:{line} | {message}"

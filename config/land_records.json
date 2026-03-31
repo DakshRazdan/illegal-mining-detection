@@ -1,0 +1,60 @@
+{
+  "land_records": [
+    {
+      "plot_id": "LR-JH-DHN-001",
+      "village": "Kusunda",
+      "block": "Dhanbad",
+      "district": "Dhanbad",
+      "state": "Jharkhand",
+      "land_type": "forest",
+      "ownership": "government",
+      "forest_category": "reserved",
+      "area_ha": 1200.0,
+      "coordinates_approx": [85.92, 23.68],
+      "revenue_khata": "RF-001",
+      "notes": "Reserved forest — mining prohibited without Stage-II forest clearance"
+    },
+    {
+      "plot_id": "LR-JH-BKR-002",
+      "village": "Chas",
+      "block": "Bokaro",
+      "district": "Bokaro",
+      "state": "Jharkhand",
+      "land_type": "revenue",
+      "ownership": "government",
+      "forest_category": null,
+      "area_ha": 340.0,
+      "coordinates_approx": [86.05, 23.62],
+      "revenue_khata": "GS-045",
+      "notes": "Government land — leased to Bokaro Minerals"
+    },
+    {
+      "plot_id": "LR-JH-HZB-003",
+      "village": "Chalkari",
+      "block": "Hazaribagh",
+      "district": "Hazaribagh",
+      "state": "Jharkhand",
+      "land_type": "private",
+      "ownership": "private",
+      "forest_category": null,
+      "area_ha": 45.0,
+      "coordinates_approx": [85.86, 23.72],
+      "revenue_khata": "PL-128",
+      "notes": "Private agricultural land — suspected illegal quarrying"
+    },
+    {
+      "plot_id": "LR-JH-GUA-004",
+      "village": "Gua",
+      "block": "Chaibasa",
+      "district": "West Singhbhum",
+      "state": "Jharkhand",
+      "land_type": "tribal",
+      "ownership": "tribal",
+      "forest_category": "community",
+      "area_ha": 950.0,
+      "coordinates_approx": [85.97, 23.55],
+      "revenue_khata": "ST-007",
+      "notes": "Scheduled Tribe community land — Eastern Iron Ore has approved consent"
+    }
+  ]
+}

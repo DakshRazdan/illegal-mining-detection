@@ -1,0 +1,4 @@
+# results/ — all pipeline run outputs
+# results/demo/       — generated dashboard HTML files
+# results/logs/       — daily log files (auto-created by logger)
+# results/detections/ — saved detection GeoJSON outputs

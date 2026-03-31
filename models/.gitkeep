@@ -1,0 +1,5 @@
+# Placeholder — model weights stored here after training
+# models/unet/best.pth        — U-Net trained weights
+# models/yolo/best.pt         — YOLOv11 trained weights
+# models/rf/spectral_rf.pkl   — Random Forest (if persisted)
+# None committed to git — add to .gitignore

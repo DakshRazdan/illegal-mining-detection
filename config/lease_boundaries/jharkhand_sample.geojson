@@ -1,0 +1,102 @@
+{
+  "type": "FeatureCollection",
+  "name": "Jharkhand Sample Mining Leases",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "lease_id": "LEASE-JH-001",
+        "mine_name": "Rajmahal Open Cast Mine",
+        "company": "Jharkhand Coal Extraction Ltd.",
+        "commodity": "coal",
+        "status": "ACTIVE",
+        "ec_id": "EC-JH-2018-001",
+        "area_ha": 450.0,
+        "district": "Sahebganj",
+        "state": "Jharkhand",
+        "granted_year": 2018,
+        "expires_year": 2038
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [85.88, 23.72], [85.96, 23.72],
+          [85.96, 23.78], [85.88, 23.78],
+          [85.88, 23.72]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "lease_id": "LEASE-JH-002",
+        "mine_name": "North Bokaro Coal Block",
+        "company": "Bokaro Minerals Pvt. Ltd.",
+        "commodity": "coal",
+        "status": "ACTIVE",
+        "ec_id": "EC-JH-2015-003",
+        "area_ha": 210.5,
+        "district": "Bokaro",
+        "state": "Jharkhand",
+        "granted_year": 2015,
+        "expires_year": 2035
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [86.00, 23.58], [86.10, 23.58],
+          [86.10, 23.65], [86.00, 23.65],
+          [86.00, 23.58]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "lease_id": "LEASE-JH-003",
+        "mine_name": "Chalkari Granite Quarry",
+        "company": "Hazaribagh Stone Quarries",
+        "commodity": "granite",
+        "status": "EXPIRED",
+        "ec_id": "EC-JH-2020-007",
+        "area_ha": 35.0,
+        "district": "Hazaribagh",
+        "state": "Jharkhand",
+        "granted_year": 2020,
+        "expires_year": 2023
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [85.82, 23.69], [85.86, 23.69],
+          [85.86, 23.72], [85.82, 23.72],
+          [85.82, 23.69]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "lease_id": "LEASE-JH-004",
+        "mine_name": "Gua Iron Ore Mine",
+        "company": "Eastern Iron Ore Corp.",
+        "commodity": "iron ore",
+        "status": "ACTIVE",
+        "ec_id": "EC-JH-2021-012",
+        "area_ha": 780.0,
+        "district": "West Singhbhum",
+        "state": "Jharkhand",
+        "granted_year": 2021,
+        "expires_year": 2041
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [85.92, 23.51], [86.02, 23.51],
+          [86.02, 23.60], [85.92, 23.60],
+          [85.92, 23.51]
+        ]]
+      }
+    }
+  ]
+}

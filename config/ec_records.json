@@ -1,0 +1,56 @@
+{
+  "ec_records": [
+    {
+      "ec_id": "EC-JH-2018-001",
+      "lease_id": "LEASE-JH-001",
+      "company": "Jharkhand Coal Extraction Ltd.",
+      "mine_name": "Rajmahal Open Cast Mine",
+      "status": "ACTIVE",
+      "valid_from": "2018-04-01",
+      "valid_until": "2028-03-31",
+      "approved_area_ha": 450.0,
+      "commodity": "coal",
+      "issue_authority": "MoEFCC",
+      "conditions": ["dust suppression mandatory", "no mining within 500m of Damodar River"]
+    },
+    {
+      "ec_id": "EC-JH-2015-003",
+      "lease_id": "LEASE-JH-002",
+      "company": "Bokaro Minerals Pvt. Ltd.",
+      "mine_name": "North Bokaro Coal Block",
+      "status": "ACTIVE",
+      "valid_from": "2015-06-15",
+      "valid_until": "2025-06-14",
+      "approved_area_ha": 210.5,
+      "commodity": "coal",
+      "issue_authority": "MoEFCC",
+      "conditions": ["progressive rehabilitation required"]
+    },
+    {
+      "ec_id": "EC-JH-2020-007",
+      "lease_id": "LEASE-JH-003",
+      "company": "Hazaribagh Stone Quarries",
+      "mine_name": "Chalkari Granite Quarry",
+      "status": "EXPIRED",
+      "valid_from": "2020-01-10",
+      "valid_until": "2023-01-09",
+      "approved_area_ha": 35.0,
+      "commodity": "granite",
+      "issue_authority": "State PCB Jharkhand",
+      "conditions": []
+    },
+    {
+      "ec_id": "EC-JH-2021-012",
+      "lease_id": "LEASE-JH-004",
+      "company": "Eastern Iron Ore Corp.",
+      "mine_name": "Gua Iron Ore Mine",
+      "status": "ACTIVE",
+      "valid_from": "2021-03-01",
+      "valid_until": "2031-02-28",
+      "approved_area_ha": 780.0,
+      "commodity": "iron ore",
+      "issue_authority": "MoEFCC",
+      "conditions": ["tribal consent verified", "forest diversion approved"]
+    }
+  ]
+}
