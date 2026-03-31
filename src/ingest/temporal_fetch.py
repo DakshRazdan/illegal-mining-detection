@@ -4,6 +4,8 @@ Microsoft Planetary Computer. Returns PNG tiles suitable for
 map overlay rendering.
 """
 
+import traceback
+import logging
 import planetary_computer
 import pystac_client
 import stackstac
@@ -160,6 +162,8 @@ def fetch_ndvi_composite(start: str, end: str, label: str,
         return result
     
     except Exception as e:
+        print(f"ERROR fetching {label}: {type(e).__name__}: {e}")
+        traceback.print_exc()
         result = {
             "label": label, "start": start, "end": end,
             "status": "error", "error": str(e),

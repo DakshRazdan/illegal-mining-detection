@@ -278,12 +278,12 @@ def build_map(result: PipelineResult) -> folium.Map:
     center     = cfg.get("map_center", [23.65, 86.0])
     zoom_start = cfg.get("map_zoom", 11)
 
-    # Base map — light satellite feel
+    # Base map — Esri satellite imagery
     fmap = folium.Map(
         location=center,
         zoom_start=zoom_start,
-        tiles="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-        attr="© OpenStreetMap contributors © CARTO",
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attr="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
         prefer_canvas=True,
     )
 
