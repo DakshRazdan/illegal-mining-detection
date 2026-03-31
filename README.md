@@ -2,8 +2,6 @@
 
 > **Zero-Latency Agentic Verification Loop**
 > Detecting a hole in the ground is easy. Knowing if it's legal in real-time is hard.
-> 
-> *Winner — Hackathon 2026*
 
 ---
 
