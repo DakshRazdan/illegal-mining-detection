@@ -67,12 +67,15 @@ Prompt:
 
 ## Phase 4 — Architect (Core Features)
 
-### Claude Code Terminal 1 — ML Models
+### Claude Code Terminal 1 — ML Models (Agent Prompt 4.3)
 Prompt:
-> Implement src/detect/spectral_rf.py using the pre-validated compute_indices(),
-> filter_false_positives(), classify_land_cover(), and mining_score code from SPEC.md.
+> src/detect/spectral_rf.py is ALREADY IMPLEMENTED — do NOT rewrite it.
+> It uses a 7-band stack (B03, B04, B05, B07, B08, B11, B12) and 6-index v2 fusion
+> (NDVI, BSI, NDWI, NBR, CMI, RECI). Treat it as a dependency, not a task.
 > Implement src/detect/unet_detect.py with U-Net inference (fallback to stub if no weights).
-> Implement src/detect/ensemble.py to fuse all detection outputs.
+> Implement src/detect/ensemble.py to fuse spectral_rf + unet + yolo outputs.
+> Ingestion in src/ingest/sentinel2.py MUST request 7 bands:
+>   assets=["B04", "B08", "B11", "B03", "B05", "B07", "B12"]
 
 ### Antigravity Agent 2 — Detection Integration
 - [ ] Wire src/detect/ outputs into PipelineResult via src/types.py

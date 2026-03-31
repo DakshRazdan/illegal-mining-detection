@@ -15,3 +15,16 @@ Format: `[DATE TIME] — [Agent Name]`
   src/utils/logger.py, src/utils/geo_utils.py,
   scripts/seed_db.py, scripts/demo.py, EXECUTION_PLAN.md, WHITEPAPER.md
 - Next recommended task: Phase 2 Blueprint — Implementation Plan + AI Architecture artifacts
+
+---
+
+## [2026-03-31 12:18 IST] — Antigravity Agent 2 (Detection)
+
+- Task completed: Updated spectral detection to 6-index fusion (added CMI + RECI)
+- Files modified: src/detect/spectral_rf.py (created), EXECUTION_PLAN.md (Agent Prompt 4.3 updated)
+- Changes:
+  - Bands updated: 4-band → 7-band stack (added B05, B07, B12)
+  - compute_indices() → compute_indices_extended() (adds CMI + RECI indices)
+  - Mining score weights updated to v2: NDVI(0.25) BSI(0.20) NDWI(0.15) NBR(0.15) CMI(0.15) RECI(0.10)
+  - EXECUTION_PLAN.md Agent Prompt 4.3 updated to reflect 7-band stack requirement for ingestion
+- Next recommended task: Phase 2 Blueprint artifacts
