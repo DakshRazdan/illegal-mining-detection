@@ -1,1078 +1,276 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>OpenMine Watch — Illegal Mining Detection via Satellite</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-:root{
-  --bg:#070b0f;--surface:#0d1520;--card:#111923;--border:#1e2d3d;
-  --accent:#00e5a0;--warn:#ff8c42;--danger:#ff3a3a;--sky:#38bdf8;
-  --muted:#4a6880;--text:#c5d8e8;--head:#e8f4ff;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;scroll-padding-top:68px;}
-body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-weight:300;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.035) 2px,rgba(0,0,0,.035) 4px);}
-
-/* NAV */
-nav{position:fixed;top:0;width:100%;z-index:200;background:rgba(7,11,15,.92);backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;}
-.nav-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.08em;
-  color:var(--accent);display:flex;align-items:center;gap:.5rem;}
-.nav-dot{width:9px;height:9px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger);animation:blink 1.8s infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
-.nav-links{display:flex;gap:0;list-style:none;}
-.nav-links a{color:var(--muted);text-decoration:none;font-family:'Space Mono',monospace;font-size:.68rem;
-  letter-spacing:.1em;text-transform:uppercase;padding:.5rem 1rem;transition:color .2s,background .2s;border-radius:2px;}
-.nav-links a:hover{color:var(--accent);background:rgba(0,229,160,.06);}
-.nav-badge{font-family:'Space Mono',monospace;font-size:.6rem;background:rgba(0,229,160,.1);
-  border:1px solid rgba(0,229,160,.4);color:var(--accent);padding:.3rem .8rem;border-radius:2px;letter-spacing:.1em;}
-
-/* TICKER */
-.ticker{background:rgba(255,58,58,.07);border-bottom:1px solid rgba(255,58,58,.18);padding:.35rem 0;overflow:hidden;margin-top:60px;}
-.ticker-track{display:flex;gap:5rem;animation:tick 28s linear infinite;white-space:nowrap;}
-@keyframes tick{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-.ticker-item{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--danger);letter-spacing:.08em;}
-.ticker-item b{color:var(--warn);}
-
-/* HERO */
-#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  position:relative;overflow:hidden;padding:80px 2rem 4rem;}
-.hero-grid{position:absolute;inset:0;
-  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
-  background-size:56px 56px;opacity:.3;}
-.hero-glow{position:absolute;width:800px;height:800px;
-  background:radial-gradient(circle,rgba(0,229,160,.065) 0%,transparent 65%);
-  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.hero-content{position:relative;z-index:2;text-align:center;max-width:900px;}
-.hero-tag{display:inline-flex;align-items:center;gap:.5rem;font-family:'Space Mono',monospace;font-size:.65rem;
-  color:var(--accent);letter-spacing:.15em;text-transform:uppercase;border:1px solid rgba(0,229,160,.28);
-  padding:.4rem 1rem;border-radius:2px;margin-bottom:2rem;background:rgba(0,229,160,.05);}
-h1{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(3rem,8vw,6.5rem);
-  line-height:.9;letter-spacing:-.01em;color:var(--head);margin-bottom:1.2rem;}
-h1 em{color:var(--accent);font-style:normal;}
-.hero-sub{font-size:1.1rem;font-weight:300;color:var(--muted);max-width:580px;margin:0 auto 2.5rem;line-height:1.65;}
-.hero-stats{display:flex;justify-content:center;gap:3rem;margin-bottom:3rem;flex-wrap:wrap;}
-.hstat{text-align:center;}
-.hstat-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.6rem;color:var(--accent);display:block;line-height:1;}
-.hstat-label{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
-.btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
-.btn{font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
-  padding:.85rem 2rem;border-radius:2px;text-decoration:none;cursor:pointer;border:none;transition:all .2s;}
-.btn-primary{background:var(--accent);color:#070b0f;}
-.btn-primary:hover{background:#00ffb3;box-shadow:0 0 24px rgba(0,229,160,.45);}
-.btn-outline{background:transparent;color:var(--accent);border:1px solid rgba(0,229,160,.5);}
-.btn-outline:hover{background:rgba(0,229,160,.08);}
-.scroll-cue{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
-  font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.12em;
-  display:flex;flex-direction:column;align-items:center;gap:.4rem;animation:bob 2s infinite;}
-@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(5px);}}
-.scroll-cue::after{content:'↓';font-size:.9rem;color:var(--accent);}
-
-/* SECTIONS */
-section{padding:5rem 2rem;scroll-margin-top:60px;}
-.sec-hdr{max-width:1300px;margin:0 auto 2.5rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
-.sec-num{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--accent);letter-spacing:.2em;display:block;margin-bottom:.4rem;}
-h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);
-  color:var(--head);letter-spacing:.02em;line-height:1.1;}
-.sec-meta{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);text-align:right;line-height:1.8;}
-
-/* STATS STRIP */
-.stats-strip{max-width:1300px;margin:0 auto 2rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
-.scard{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.2rem;
-  border-left:3px solid var(--accent);transition:transform .2s,box-shadow .2s;cursor:default;}
-.scard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4);}
-.scard.w{border-left-color:var(--warn);}
-.scard.d{border-left-color:var(--danger);}
-.scard.s{border-left-color:var(--sky);}
-.scard-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2rem;color:var(--head);line-height:1;}
-.scard-lbl{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.08em;margin-top:.3rem;}
-
-/* CARDS / GRID */
-.grid2{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
-.grid3{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;}
-.grid5{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;}
-.card{background:var(--card);border:1px solid var(--border);border-radius:4px;overflow:hidden;
-  transition:border-color .25s,box-shadow .25s;}
-.card:hover{border-color:rgba(0,229,160,.25);box-shadow:0 4px 24px rgba(0,0,0,.35);}
-.card-hdr{padding:.9rem 1.2rem;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;}
-.card-title{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;}
-.badge{font-family:'Space Mono',monospace;font-size:.56rem;padding:.2rem .55rem;border-radius:2px;letter-spacing:.06em;}
-.b-ok{background:rgba(0,229,160,.13);color:var(--accent);}
-.b-w{background:rgba(255,140,66,.13);color:var(--warn);}
-.b-d{background:rgba(255,58,58,.13);color:var(--danger);}
-.b-s{background:rgba(56,189,248,.13);color:var(--sky);}
-
-/* MAP CANVASES */
-.map-wrap{position:relative;overflow:hidden;cursor:crosshair;}
-.map-canvas{width:100%;display:block;image-rendering:auto;}
-.map-tooltip{position:absolute;background:rgba(7,11,15,.9);border:1px solid var(--border);
-  font-family:'Space Mono',monospace;font-size:.62rem;color:var(--text);padding:.4rem .7rem;
-  border-radius:2px;pointer-events:none;display:none;z-index:10;white-space:nowrap;}
-.zoom-btn{position:absolute;top:.6rem;right:.6rem;background:rgba(7,11,15,.8);border:1px solid var(--border);
-  color:var(--accent);font-family:'Space Mono',monospace;font-size:.65rem;padding:.35rem .6rem;
-  border-radius:2px;cursor:pointer;z-index:5;transition:background .2s;letter-spacing:.05em;}
-.zoom-btn:hover{background:rgba(0,229,160,.15);}
-.map-legend{display:flex;flex-wrap:wrap;gap:.8rem;padding:.7rem 1.2rem;border-top:1px solid var(--border);}
-.leg-item{display:flex;align-items:center;gap:.4rem;font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);}
-.leg-rect{width:22px;height:9px;border-radius:1px;}
-
-/* INDEX STRIP */
-.idx-strip{max-width:1300px;margin:0 auto;}
-.idx-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;}
-.idx-card{background:var(--card);border:1px solid var(--border);border-radius:4px;overflow:hidden;
-  transition:border-color .2s,transform .2s;cursor:pointer;}
-.idx-card:hover{border-color:var(--accent);transform:translateY(-3px);}
-.idx-card.active{border-color:var(--accent);box-shadow:0 0 16px rgba(0,229,160,.2);}
-.idx-lbl{padding:.55rem .7rem;font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);
-  border-top:1px solid var(--border);text-align:center;line-height:1.5;}
-
-/* CONTROLS */
-.controls{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;
-  background:var(--card);border:1px solid var(--border);border-radius:4px;padding:.9rem 1.2rem;
-  margin-bottom:1.5rem;}
-.ctrl-label{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.08em;white-space:nowrap;}
-.ctrl-slider{-webkit-appearance:none;appearance:none;height:3px;background:var(--border);
-  border-radius:2px;outline:none;cursor:pointer;width:180px;}
-.ctrl-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
-  border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 6px rgba(0,229,160,.5);}
-.ctrl-val{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--accent);min-width:3ch;}
-.yr-btns{display:flex;gap:.4rem;}
-.yr-btn{font-family:'Space Mono',monospace;font-size:.65rem;padding:.35rem .7rem;border-radius:2px;
-  background:var(--surface);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .2s;}
-.yr-btn:hover,.yr-btn.active{background:rgba(0,229,160,.1);border-color:var(--accent);color:var(--accent);}
-
-/* TEMPORAL */
-.temporal-grid{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;}
-.alert-table{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:.68rem;}
-.alert-table th{color:var(--muted);font-weight:400;letter-spacing:.08em;padding:.45rem .8rem;border-bottom:1px solid var(--border);text-align:left;}
-.alert-table td{padding:.55rem .8rem;border-bottom:1px solid rgba(30,45,61,.5);color:var(--text);}
-.alert-table tr{cursor:pointer;transition:background .15s;}
-.alert-table tr:hover td{background:rgba(0,229,160,.04);}
-.alert-table tr.selected td{background:rgba(0,229,160,.08);}
-.chip{padding:.15rem .55rem;border-radius:2px;font-size:.58rem;letter-spacing:.06em;}
-
-/* LAND COVER */
-.lc-layout{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 280px;gap:1.5rem;}
-.lc-legend-panel{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.2rem;display:flex;flex-direction:column;gap:1rem;}
-.lc-item{display:flex;align-items:flex-start;gap:.8rem;}
-.lc-sw{width:18px;height:18px;border-radius:2px;flex-shrink:0;margin-top:2px;}
-.lc-name{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--text);line-height:1.4;}
-.lc-chg{font-size:.6rem;color:var(--muted);}
-.neg{color:var(--danger)!important;}.pos{color:var(--accent)!important;}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;
-  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
-.modal-overlay.open{opacity:1;pointer-events:all;}
-.modal-box{background:var(--card);border:1px solid var(--border);border-radius:6px;
-  max-width:90vw;max-height:90vh;overflow:hidden;transform:scale(.95);transition:transform .3s;
-  display:flex;flex-direction:column;}
-.modal-overlay.open .modal-box{transform:scale(1);}
-.modal-hdr{padding:1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.modal-title{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--accent);letter-spacing:.1em;}
-.modal-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:.2rem .4rem;
-  border-radius:2px;transition:color .2s;}
-.modal-close:hover{color:var(--danger);}
-.modal-body{padding:1.2rem;overflow:auto;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;}
-#modal-canvas{display:block;max-width:100%;border-radius:2px;}
-.modal-info{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);line-height:2.2;min-width:200px;}
-.modal-info b{color:var(--head);}
-
-/* PIPELINE */
-.pipeline{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;position:relative;}
-.pipeline::after{content:'';position:absolute;top:29px;left:calc(100%/12);right:calc(100%/12);
-  height:2px;background:linear-gradient(90deg,var(--accent),var(--warn),var(--danger));z-index:0;pointer-events:none;}
-.pipe-step{text-align:center;position:relative;z-index:1;padding:.5rem;}
-.pipe-icon{width:58px;height:58px;border-radius:50%;background:var(--card);border:2px solid var(--border);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.5rem;
-  transition:border-color .3s,box-shadow .3s;cursor:default;}
-.pipe-step:hover .pipe-icon{border-color:var(--accent);box-shadow:0 0 14px rgba(0,229,160,.25);}
-.pipe-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;color:var(--head);
-  margin-bottom:.3rem;letter-spacing:.05em;}
-.pipe-desc{font-size:.73rem;color:var(--muted);line-height:1.4;}
-
-/* CODE */
-.code-block{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1.5rem;
-  font-family:'Space Mono',monospace;font-size:.72rem;line-height:1.9;overflow-x:auto;
-  max-width:1300px;margin:0 auto 2rem;white-space:pre;}
-.kw{color:#ff7b72;}.fn{color:#d2a8ff;}.str{color:#a5d6ff;}.cm{color:#484f58;}.num{color:#79c0ff;}.op{color:var(--accent);}
-.deps{max-width:1300px;margin:0 auto;display:flex;flex-wrap:wrap;gap:.7rem;}
-.dep{font-family:'Space Mono',monospace;font-size:.63rem;background:var(--card);border:1px solid var(--border);
-  padding:.35rem .85rem;border-radius:2px;color:var(--muted);transition:border-color .2s,color .2s;cursor:default;}
-.dep:hover{border-color:var(--accent);color:var(--accent);}
-
-/* FADE IN */
-.fi{opacity:0;transform:translateY(18px);transition:opacity .55s,transform .55s;}
-.fi.vis{opacity:1;transform:none;}
-
-/* FOOTER */
-footer{border-top:1px solid var(--border);padding:2rem;text-align:center;
-  font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.07em;}
-footer a{color:var(--accent);text-decoration:none;}
-
-/* LIVE MAP SECTION */
-.lm-stat{font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.08em;}
-.lm-stat-val{color:var(--accent);}
-.lm-stat-val.danger{color:var(--danger);}
-.lm-stat-val.warn{color:var(--warn);}
-.lm-map-frame{position:relative;height:520px;background:var(--bg);border-bottom:1px solid var(--border);}
-.lm-map-frame iframe{width:100%;height:100%;border:none;display:block;}
-.lm-offline{position:absolute;inset:0;background:rgba(7,11,15,.93);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;
-  font-family:'Space Mono',monospace;font-size:.72rem;text-align:center;padding:2rem;}
-.lm-offline-title{color:var(--warn);font-size:.85rem;letter-spacing:.1em;}
-.lm-offline-cmd{color:var(--accent);background:var(--bg);border:1px solid var(--border);
-  padding:.5rem 1rem;border-radius:4px;font-size:.65rem;margin:.3rem 0;}
-.lm-retry-btn{background:var(--accent);color:#070b0f;border:none;padding:.6rem 1.4rem;
-  border-radius:2px;cursor:pointer;font-family:'Space Mono',monospace;font-size:.68rem;
-  letter-spacing:.1em;margin-top:.4rem;transition:background .2s;}
-.lm-retry-btn:hover{background:#00ffb3;}
-.math-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;padding:1.5rem;}
-.math-block{display:flex;flex-direction:column;gap:.8rem;}
-.math-block-title{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:.12em;}
-.math-formula{font-family:'Space Mono',monospace;font-size:.68rem;color:var(--text);
-  line-height:2.3;background:var(--bg);padding:1rem 1.2rem;border-radius:4px;border:1px solid var(--border);}
-.math-formula .mf-eq{color:var(--head);}
-.math-formula .mf-note{color:var(--muted);font-size:.6rem;}
-.math-formula .mf-hi{color:var(--accent);}
-.math-formula .mf-danger{color:var(--danger);}
-.math-formula .mf-warn{color:var(--warn);}
-
-@media(max-width:900px){
-  .grid2,.grid3,.grid5,.stats-strip,.temporal-grid,.lc-layout,.pipeline,.idx-grid,.math-grid{grid-template-columns:1fr;}
-  .pipeline::after{display:none;}
-  nav .nav-links{display:none;}
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KhanVigil — Mining Detection System</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-<!-- TICKER -->
-<div class="ticker">
-  <div class="ticker-track" id="tickerTrack">
-    <span class="ticker-item">&#9888; ALERT &mdash; Jharkhand, India &mdash; Mining score: <b>0.672</b> &mdash; 477 ha affected</span>
-    <span class="ticker-item">&#9888; ALERT &mdash; Bokaro District &mdash; Temporal anomaly detected 2022&ndash;2023</span>
-    <span class="ticker-item">&#9888; ALERT &mdash; Dhanbad Belt &mdash; NDVI drop <b>&minus;0.24</b> &middot; BSI rise <b>+0.31</b></span>
-    <span class="ticker-item">&#8505; SENTINEL-2 &mdash; Last ingestion: 2023-12-28 &middot; Cloud cover &lt;20%</span>
-    <span class="ticker-item">&#9888; ALERT &mdash; Jharkhand, India &mdash; Mining score: <b>0.672</b> &mdash; 477 ha affected</span>
-    <span class="ticker-item">&#9888; ALERT &mdash; Bokaro District &mdash; Temporal anomaly detected 2022&ndash;2023</span>
-    <span class="ticker-item">&#9888; ALERT &mdash; Dhanbad Belt &mdash; NDVI drop <b>&minus;0.24</b> &middot; BSI rise <b>+0.31</b></span>
-    <span class="ticker-item">&#8505; SENTINEL-2 &mdash; Last ingestion: 2023-12-28 &middot; Cloud cover &lt;20%</span>
-  </div>
-</div>
+  <!-- ═══════════════════════════════ TOP BAR ═══════════════════════════════ -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <polygon points="14,2 26,9 26,19 14,26 2,19 2,9" stroke="#f0a500" stroke-width="1.5" fill="none" />
+          <polygon points="14,7 21,11 21,17 14,21 7,17 7,11" fill="#f0a500" opacity="0.2" />
+          <circle cx="14" cy="14" r="3" fill="#f0a500" />
+        </svg>
+      </div>
+      <span class="logo-text">KhanVigil <span class="logo-sub">AI</span></span>
+      <span class="topbar-divider"></span>
+      <span class="topbar-page">Web Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <div class="live-indicator"><span class="pulse-dot"></span>LIVE</div>
+      <div class="clock-block">
+        <div class="clock" id="clock">--:--:-- IST</div>
+        <div class="clock-date" id="clock-date">--</div>
+      </div>
+      <div class="user-pill">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="5" r="3" stroke="#aaa" stroke-width="1.2" />
+          <path d="M1 13c0-3 2.7-5 6-5s6 2 6 5" stroke="#aaa" stroke-width="1.2" stroke-linecap="round" />
+        </svg>
+        ISRO OPERATOR
+      </div>
+    </div>
+  </header>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-logo"><div class="nav-dot"></div>OpenMine Watch</div>
-  <ul class="nav-links">
-    <li><a href="#analysis">Analysis</a></li>
-    <li><a href="#fusion">Fusion</a></li>
-    <li><a href="#temporal">Temporal</a></li>
-    <li><a href="#landcover">Land Cover</a></li>
-    <li><a href="#filter">FP Filter</a></li>
-    <li><a href="#how">Method</a></li>
-    <li><a href="#open">Open Source</a></li>
-    <li><a href="#livemap" style="color:var(--accent);border:1px solid rgba(0,229,160,.25);border-radius:2px;">Live Map</a></li>
-  </ul>
-  <div class="nav-badge">LIVE SENTINEL-2</div>
-</nav>
+  <!-- ═══════════════════════════════ LAYOUT ════════════════════════════════ -->
+  <div class="layout">
 
-<!-- HERO -->
-<section id="hero">
-  <div class="hero-grid"></div>
-  <div class="hero-glow"></div>
-  <div class="hero-content">
-    <div class="hero-tag">&#9654; Open Source &middot; Satellite Remote Sensing &middot; Environmental Justice</div>
-    <h1>Detect <em>Illegal</em><br/>Mining from Space</h1>
-    <p class="hero-sub">Multi-index Sentinel-2 fusion detects unauthorised mining using NDVI, BSI, NDWI and NBR spectral change analysis across a 2019&ndash;2023 time series.</p>
-    <div class="hero-stats">
-      <div class="hstat"><span class="hstat-val" id="c1">0</span><span class="hstat-label">Hectares Flagged</span></div>
-      <div class="hstat"><span class="hstat-val" id="c2">0</span><span class="hstat-label">Critical Zone (ha)</span></div>
-      <div class="hstat"><span class="hstat-val" id="c3">0.000</span><span class="hstat-label">Peak Score</span></div>
-      <div class="hstat"><span class="hstat-val" id="c4">0</span><span class="hstat-label">Years Analysed</span></div>
-    </div>
-    <div class="btns">
-      <a href="#analysis" class="btn btn-primary">View Analysis &darr;</a>
-      <a href="#livemap" class="btn btn-outline">Live Map &rarr;</a>
-    </div>
-  </div>
-  <div class="scroll-cue">Scroll to explore</div>
-</section>
+    <!-- ───────────── LEFT SIDEBAR ───────────── -->
+    <aside class="sidebar-left">
+      <nav class="nav-list">
+        <a class="nav-item active" href="#" data-page="dashboard">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
+            <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
+            <rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
+            <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2" />
+          </svg>
+          Dashboard
+        </a>
+        <a class="nav-item" href="#" data-page="alerts">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.5A4.5 4.5 0 013.5 6v3.5H2v1h12v-1h-1.5V6A4.5 4.5 0 008 1.5z" stroke="currentColor"
+              stroke-width="1.2" />
+            <path d="M6.5 11.5a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.2" />
+          </svg>
+          Alerts
+          <span class="badge-red" id="alert-count">6</span>
+        </a>
+        <a class="nav-item" href="#" data-page="analytics">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 13L6 8l3 3 3-4 2-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+          </svg>
+          Analytics
+        </a>
+        <a class="nav-item" href="#" data-page="reports">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="3" y="1" width="10" height="14" rx="1" stroke="currentColor" stroke-width="1.2" />
+            <line x1="6" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1.2" />
+            <line x1="6" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2" />
+            <line x1="6" y1="11" x2="9" y2="11" stroke="currentColor" stroke-width="1.2" />
+          </svg>
+          Reports
+        </a>
+        <a class="nav-item" href="#" data-page="settings">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.2" />
+            <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M3.2 12.8l1.4-1.4M11.4 4.6l1.4-1.4"
+              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+          </svg>
+          Settings
+        </a>
+      </nav>
 
-<!-- 01 NDVI BEFORE / AFTER -->
-<section id="analysis">
-  <div class="sec-hdr fi">
-    <div><span class="sec-num">01 / SPECTRAL ANALYSIS</span><h2>NDVI Before vs After</h2></div>
-    <div class="sec-meta">Region: Jharkhand Mining Belt, India<br/>Sentinel-2 L2A &middot; 60 m &middot; Bands B03 B04 B08 B11</div>
-  </div>
-  <div class="stats-strip fi">
-    <div class="scard"><div class="scard-val">477 ha</div><div class="scard-lbl">SUSPECTED MINING AREA (SCORE &gt;50%)</div></div>
-    <div class="scard w"><div class="scard-val">1,340 ha</div><div class="scard-lbl">AFFECTED AREA (SCORE &gt;35%)</div></div>
-    <div class="scard d"><div class="scard-val">112 ha</div><div class="scard-lbl">CRITICAL ZONE (SCORE &gt;65%)</div></div>
-    <div class="scard s"><div class="scard-val">0.672</div><div class="scard-lbl">PEAK MINING SCORE</div></div>
-  </div>
-  <div class="controls fi" style="max-width:1300px;margin:0 auto 1.5rem;">
-    <span class="ctrl-label">COMPARE YEAR:</span>
-    <div class="yr-btns" id="yearBtns">
-      <button class="yr-btn active" data-year="2019">2019</button>
-      <button class="yr-btn" data-year="2020">2020</button>
-      <button class="yr-btn" data-year="2021">2021</button>
-      <button class="yr-btn" data-year="2022">2022</button>
-    </div>
-    <span class="ctrl-label" style="margin-left:1rem;">vs REFERENCE: 2023</span>
-    <span class="ctrl-label" style="margin-left:auto;font-size:.58rem;">Click any map to zoom</span>
-  </div>
-  <div class="grid3 fi">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title" id="beforeLabel">NDVI 2019 &mdash; Baseline</span><span class="badge b-ok">BEFORE</span></div>
-      <div class="map-wrap"><canvas id="ndviBefore" class="map-canvas"></canvas><div class="map-tooltip" id="tt-ndvi-before"></div><button class="zoom-btn" data-target="ndviBefore" data-title="NDVI Before">&#10562; ZOOM</button></div>
-      <div class="map-legend">
-        <div class="leg-item"><div class="leg-rect" style="background:#1a9850;"></div>Dense veg</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#fee08b;"></div>Sparse</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#d73027;"></div>Bare soil</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">NDVI 2023 &mdash; Post Mining</span><span class="badge b-d">AFTER</span></div>
-      <div class="map-wrap"><canvas id="ndviAfter" class="map-canvas"></canvas><div class="map-tooltip" id="tt-ndvi-after"></div><button class="zoom-btn" data-target="ndviAfter" data-title="NDVI 2023 After">&#10562; ZOOM</button></div>
-      <div class="map-legend">
-        <div class="leg-item"><div class="leg-rect" style="background:#1a9850;"></div>Dense veg</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#fee08b;"></div>Sparse</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#d73027;"></div>Bare soil</div>
-      </div>
-    </div>
-    <div class="card" style="border-color:rgba(255,58,58,.3);">
-      <div class="card-hdr"><span class="card-title">Mining Probability Score</span><span class="badge b-d" id="scoreLabel">THRESHOLD: 0.50</span></div>
-      <div class="map-wrap"><canvas id="miningScoreCanvas" class="map-canvas"></canvas><div class="map-tooltip" id="tt-score"></div><button class="zoom-btn" data-target="miningScoreCanvas" data-title="Mining Probability Score">&#10562; ZOOM</button></div>
-      <div class="map-legend">
-        <div class="leg-item"><div class="leg-rect" style="background:#150505;"></div>Low</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#ff4400;"></div>Medium</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#ffff00;"></div>High risk</div>
-        <div class="leg-item" style="margin-left:auto;"><span id="pxCount" style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--danger);">477 ha flagged</span></div>
-      </div>
-    </div>
-  </div>
-  <div class="controls fi" style="max-width:1300px;margin:1.5rem auto 0;">
-    <span class="ctrl-label">DETECTION THRESHOLD:</span>
-    <input type="range" class="ctrl-slider" id="threshSlider" min="20" max="80" value="50"/>
-    <span class="ctrl-val" id="threshVal">0.50</span>
-    <span class="ctrl-label" style="color:var(--muted);margin-left:.5rem;">&middot; Drag to adjust sensitivity &middot; lower = more detections</span>
-  </div>
-</section>
-
-<!-- 02 MULTI-INDEX FUSION -->
-<section id="fusion" style="background:var(--surface);">
-  <div class="sec-hdr fi">
-    <div><span class="sec-num">02 / MULTI-INDEX FUSION</span><h2>Four Signals &rarr; One Score</h2></div>
-    <div class="sec-meta">NDVI 35% &middot; BSI 30% &middot; NDWI 20% &middot; NBR 15%<br/>Click any panel to inspect</div>
-  </div>
-  <div class="idx-strip fi">
-    <div class="idx-grid" id="idxGrid">
-      <div class="idx-card active" data-idx="0"><canvas id="idx0" style="width:100%;display:block;image-rendering:auto;"></canvas><div class="idx-lbl">&Delta;NDVI &middot; Vegetation Loss<br/><span style="color:var(--warn);">Weight 35%</span></div></div>
-      <div class="idx-card" data-idx="1"><canvas id="idx1" style="width:100%;display:block;image-rendering:auto;"></canvas><div class="idx-lbl">&Delta;BSI &middot; Bare Soil Gain<br/><span style="color:var(--warn);">Weight 30%</span></div></div>
-      <div class="idx-card" data-idx="2"><canvas id="idx2" style="width:100%;display:block;image-rendering:auto;"></canvas><div class="idx-lbl">&Delta;NDWI &middot; Water Turbidity<br/><span style="color:var(--warn);">Weight 20%</span></div></div>
-      <div class="idx-card" data-idx="3"><canvas id="idx3" style="width:100%;display:block;image-rendering:auto;"></canvas><div class="idx-lbl">&Delta;NBR &middot; Land Disturbance<br/><span style="color:var(--warn);">Weight 15%</span></div></div>
-      <div class="idx-card" data-idx="4" style="border-color:rgba(255,58,58,.35);"><canvas id="idx4" style="width:100%;display:block;image-rendering:auto;"></canvas><div class="idx-lbl" style="border-top-color:rgba(255,58,58,.35);">FUSED SCORE<br/><span style="color:var(--danger);">477 ha flagged</span></div></div>
-    </div>
-  </div>
-  <div style="max-width:1300px;margin:2rem auto 0;" class="fi">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Mining Probability Map &mdash; Confidence Contours 35% / 50% / 65%</span><span class="badge b-d">PROBABILITY MAP</span></div>
-      <div class="map-wrap" style="cursor:crosshair;"><canvas id="probMap" class="map-canvas" style="height:460px;"></canvas><div class="map-tooltip" id="tt-prob"></div><button class="zoom-btn" data-target="probMap" data-title="Mining Probability Map">&#10562; ZOOM</button></div>
-      <div class="map-legend">
-        <div class="leg-item"><div class="leg-rect" style="background:#ffff00;border:1px solid #666;"></div>35% contour</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#ff8800;border:1px solid #666;"></div>50% contour</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#ff0000;border:1px solid #666;"></div>65% critical</div>
-        <div class="leg-item" style="margin-left:auto;font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);">Affected (&gt;35%): 1,340 ha &nbsp;|&nbsp; Critical (&gt;65%): 112 ha &nbsp;|&nbsp; Peak score: 0.672</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 03 TEMPORAL ANOMALY -->
-<section id="temporal">
-  <div class="sec-hdr fi">
-    <div><span class="sec-num">03 / TEMPORAL ANOMALY DETECTION</span><h2>Five-Year Trend &middot; 2019&ndash;2023</h2></div>
-    <div class="sec-meta">Click a row to highlight year<br/>Baseline &mu; = 0.3241 &middot; &sigma; = 0.0371</div>
-  </div>
-  <div class="temporal-grid fi">
-    <div style="display:flex;flex-direction:column;gap:1.5rem;">
-      <div class="card">
-        <div class="card-hdr"><span class="card-title">Mining Score Trend</span><span class="badge b-w">ANOMALY DETECTION</span></div>
-        <div style="padding:1rem;height:280px;"><canvas id="trendChart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-hdr"><span class="card-title">Vegetation Health (Mean NDVI)</span><span class="badge b-ok">NDVI TREND</span></div>
-        <div style="padding:1rem;height:210px;"><canvas id="ndviTrend"></canvas></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Alert Summary Report</span></div>
-      <div style="padding:1rem;">
-        <table class="alert-table">
-          <thead><tr><th>Year</th><th>Score</th><th>&Delta; Base</th><th>Status</th></tr></thead>
-          <tbody id="alertTbody"></tbody>
-        </table>
-        <div style="margin-top:1.2rem;border-top:1px solid var(--border);padding-top:1rem;font-family:'Space Mono',monospace;font-size:.63rem;color:var(--muted);line-height:2.1;">
-          <div>Baseline &mu; &nbsp;&nbsp;: <b style="color:var(--text)">0.3241</b></div>
-          <div>Std dev &sigma; &nbsp;&nbsp;: <b style="color:var(--text)">0.0371</b></div>
-          <div>Threshold &nbsp;: <b style="color:var(--warn)">0.3612</b></div>
-          <div>2019&rarr;2023 : <b style="color:var(--text)">0.3092&rarr;0.3798</b> <span style="color:var(--danger)">(+0.0706)</span></div>
-          <div>Anomalous : <b style="color:var(--danger)">2 / 5 years</b></div>
+      <!-- LIVE ALERTS -->
+      <div class="side-panel" id="alerts-panel">
+        <div class="side-panel-header">
+          <span class="side-panel-title">LIVE ALERTS</span>
+          <span class="panel-menu">···</span>
+        </div>
+        <div class="alert-list" id="alert-list">
+          <!-- injected by JS -->
         </div>
       </div>
-    </div>
-  </div>
-</section>
 
-<!-- 04 LAND COVER -->
-<section id="landcover" style="background:var(--surface);">
-  <div class="sec-hdr fi">
-    <div><span class="sec-num">04 / K-MEANS CLASSIFICATION</span><h2>Land Cover &mdash; Was vs Became</h2></div>
-    <div class="sec-meta">4 clusters &middot; K-Means (n_init=10)<br/>Auto-labelled by spectral centroid</div>
-  </div>
-  <div class="controls fi" style="max-width:1300px;margin:0 auto 1.5rem;">
-    <span class="ctrl-label">VIEW MODE:</span>
-    <div class="yr-btns">
-      <button class="yr-btn active" id="lcSideBySide">Side by Side</button>
-      <button class="yr-btn" id="lcOverlay">Change Map</button>
-    </div>
-    <span class="ctrl-label" style="margin-left:1rem;color:var(--muted);">Click map to zoom</span>
-  </div>
-  <div class="lc-layout fi">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Land Cover 2019</span><span class="badge b-ok">BASELINE</span></div>
-      <div class="map-wrap"><canvas id="lc2019" class="map-canvas"></canvas><button class="zoom-btn" data-target="lc2019" data-title="Land Cover 2019">&#10562; ZOOM</button></div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title" id="lc2023Title">Land Cover 2023</span><span class="badge b-d">CURRENT</span></div>
-      <div class="map-wrap"><canvas id="lc2023" class="map-canvas"></canvas><button class="zoom-btn" data-target="lc2023" data-title="Land Cover 2023">&#10562; ZOOM</button></div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:1.2rem;">
-      <div class="lc-legend-panel">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;color:var(--head);letter-spacing:.05em;">CLASS LEGEND</div>
-        <div class="lc-item"><div class="lc-sw" style="background:#2d8a2d;"></div><div><div class="lc-name">Forest / Vegetation</div><div class="lc-chg neg">2019: 1,820 ha &rarr; 2023: 1,540 ha <b>(&minus;280 ha)</b></div></div></div>
-        <div class="lc-item"><div class="lc-sw" style="background:#3399ff;"></div><div><div class="lc-name">Water Bodies</div><div class="lc-chg">2019: 210 ha &rarr; 2023: 198 ha <b>(&minus;12 ha)</b></div></div></div>
-        <div class="lc-item"><div class="lc-sw" style="background:#ff8800;"></div><div><div class="lc-name">Degraded Land</div><div class="lc-chg neg">2019: 640 ha &rarr; 2023: 820 ha <b>(+180 ha)</b></div></div></div>
-        <div class="lc-item"><div class="lc-sw" style="background:#ff2222;"></div><div><div class="lc-name">Active Mining</div><div class="lc-chg neg">2019: 330 ha &rarr; 2023: 442 ha <b>(+112 ha)</b></div></div></div>
-      </div>
-      <div class="card" style="padding:1rem;">
-        <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--muted);line-height:2;margin-bottom:.8rem;">AREA CHANGE 2019&rarr;2023</div>
-        <canvas id="lcChart" style="height:160px;display:block;"></canvas>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 05 FALSE POSITIVE FILTER -->
-<section id="filter">
-  <div class="sec-hdr fi">
-    <div><span class="sec-num">05 / FALSE POSITIVE FILTERING</span><h2>OSM Urban Mask Applied</h2></div>
-    <div class="sec-meta">OpenStreetMap Overpass API<br/>Residential &middot; Farmland &middot; Industrial removed</div>
-  </div>
-  <div class="grid2 fi">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Before OSM Filter</span><span class="badge b-w">1,340 ha flagged</span></div>
-      <div class="map-wrap"><canvas id="fpBefore" class="map-canvas"></canvas><div class="map-tooltip" id="tt-fp-before"></div><button class="zoom-btn" data-target="fpBefore" data-title="Before OSM Filter">&#10562; ZOOM</button></div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">After OSM Filter</span><span class="badge b-ok">947 ha remaining</span></div>
-      <div class="map-wrap"><canvas id="fpAfter" class="map-canvas"></canvas><div class="map-tooltip" id="tt-fp-after"></div><button class="zoom-btn" data-target="fpAfter" data-title="After OSM Filter">&#10562; ZOOM</button></div>
-      <div class="map-legend"><div class="leg-item" style="color:var(--danger);">393 ha false positives removed (residential / farmland)</div></div>
-    </div>
-  </div>
-  <div style="max-width:1300px;margin:1.5rem auto 0;" class="fi">
-    <div class="card">
-      <div class="card-hdr"><span class="card-title">Filter Comparison</span></div>
-      <div style="padding:1rem;height:190px;"><canvas id="filterChart"></canvas></div>
-    </div>
-  </div>
-</section>
-
-<!-- 06 METHOD -->
-<section id="how" style="background:var(--surface);">
-  <div class="sec-hdr fi"><div><span class="sec-num">06 / METHODOLOGY</span><h2>Detection Pipeline</h2></div></div>
-  <div class="pipeline fi">
-    <div class="pipe-step"><div class="pipe-icon">&#128752;</div><div class="pipe-title">Sentinel-2 Fetch</div><div class="pipe-desc">STAC query via Planetary Computer. Cloud cover &lt;20%.</div></div>
-    <div class="pipe-step"><div class="pipe-icon">&#128225;</div><div class="pipe-title">Band Stack</div><div class="pipe-desc">Bands B03 B04 B08 B11 at 60 m via stackstac + Dask.</div></div>
-    <div class="pipe-step"><div class="pipe-icon">&#128202;</div><div class="pipe-title">Index Compute</div><div class="pipe-desc">NDVI, BSI, NDWI, NBR per pixel. NaN masking applied.</div></div>
-    <div class="pipe-step"><div class="pipe-icon">&#9878;</div><div class="pipe-title">Weighted Fusion</div><div class="pipe-desc">Delta channels normalised and fused by weight vector.</div></div>
-    <div class="pipe-step"><div class="pipe-icon">&#127919;</div><div class="pipe-title">Thresholding</div><div class="pipe-desc">Score &gt;0.50 flagged. Contours at 35 / 50 / 65 %.</div></div>
-    <div class="pipe-step"><div class="pipe-icon">&#127968;</div><div class="pipe-title">OSM Filter</div><div class="pipe-desc">Urban &amp; farmland pixels zeroed via Overpass API mask.</div></div>
-  </div>
-</section>
-
-<!-- 07 OPEN SOURCE -->
-<section id="open">
-  <div class="sec-hdr fi"><div><span class="sec-num">07 / OPEN SOURCE</span><h2>Run It Yourself</h2></div></div>
-  <div class="code-block fi"><span class="cm"># Install dependencies</span>
-<span class="kw">pip</span> install pystac-client planetary-computer stackstac scikit-learn
-
-<span class="cm"># Core analysis &mdash; change AOI to your region of interest</span>
-<span class="kw">from</span> mining_detect <span class="kw">import</span> run_analysis
-
-result = <span class="fn">run_analysis</span>(
-    aoi     = { <span class="str">"type"</span>: <span class="str">"Polygon"</span>, <span class="str">"coordinates"</span>: [[
-                [<span class="num">85.8</span>, <span class="num">23.5</span>], [<span class="num">86.2</span>, <span class="num">23.5</span>],
-                [<span class="num">86.2</span>, <span class="num">23.8</span>], [<span class="num">85.8</span>, <span class="num">23.8</span>] ]] },
-    years   = [<span class="num">2019</span>, <span class="num">2020</span>, <span class="num">2021</span>, <span class="num">2022</span>, <span class="num">2023</span>],
-    weights = {<span class="str">"ndvi"</span>: <span class="num">0.35</span>, <span class="str">"bsi"</span>: <span class="num">0.30</span>, <span class="str">"ndwi"</span>: <span class="num">0.20</span>, <span class="str">"nbr"</span>: <span class="num">0.15</span>},
-    threshold = <span class="num">0.50</span>
-)
-
-<span class="fn">print</span>(<span class="op">f</span><span class="str">"Affected: {result.affected_ha:.0f} ha  |  Peak: {result.peak_score:.3f}"</span>)</div>
-  <div class="deps fi">
-    <span class="dep">pystac-client</span><span class="dep">planetary-computer</span><span class="dep">stackstac</span>
-    <span class="dep">numpy</span><span class="dep">matplotlib</span><span class="dep">scikit-learn</span>
-    <span class="dep">requests (OSM)</span><span class="dep">xarray</span><span class="dep">dask</span><span class="dep">rasterio</span>
-  </div>
-</section>
-
-<!-- ══ 08 LIVE MAP ════════════════════════════════════════════════ -->
-<section id="livemap" style="background:var(--surface);">
-  <div class="sec-hdr fi">
-    <div><span class="sec-num">08 / LIVE SATELLITE MAP</span><h2>Real-Time Detection Map</h2></div>
-    <div class="sec-meta">Folium + Esri World Imagery &middot; FastAPI backend<br/>Sentinel-2 detections &middot; Jharkhand, India</div>
-  </div>
-
-  <!-- Status bar -->
-  <div class="controls fi" style="max-width:1300px;margin:0 auto 1.5rem;">
-    <span class="ctrl-label">BACKEND:</span>
-    <span class="lm-stat"><span class="lm-stat-val" id="lm-status">Checking&hellip;</span></span>
-    <span class="ctrl-label" style="margin-left:1.2rem;">DETECTIONS:</span>
-    <span class="lm-stat"><span class="lm-stat-val" id="lm-det">&mdash;</span></span>
-    <span class="ctrl-label" style="margin-left:1.2rem;">ILLEGAL:</span>
-    <span class="lm-stat"><span class="lm-stat-val danger" id="lm-ill">&mdash;</span></span>
-    <span class="ctrl-label" style="margin-left:1.2rem;">AREA:</span>
-    <span class="lm-stat"><span class="lm-stat-val warn" id="lm-area">&mdash;</span></span>
-    <button onclick="retryLiveMap()" style="margin-left:auto;background:transparent;border:1px solid rgba(0,229,160,.4);color:var(--accent);font-family:'Space Mono',monospace;font-size:.62rem;padding:.35rem .9rem;border-radius:2px;cursor:pointer;letter-spacing:.08em;transition:background .2s;" onmouseover="this.style.background='rgba(0,229,160,.08)'" onmouseout="this.style.background='transparent'">&#8635; REFRESH</button>
-    <a href="/map" target="_blank" style="background:var(--accent);color:#070b0f;font-family:'Space Mono',monospace;font-size:.62rem;padding:.35rem .9rem;border-radius:2px;text-decoration:none;letter-spacing:.08em;">OPEN FULL &#8599;</a>
-  </div>
-
-  <!-- Folium iframe -->
-  <div style="max-width:1300px;margin:0 auto 1.5rem;" class="fi">
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title">Satellite Detection Map &mdash; Jharkhand Mining Belt</span>
-        <span class="badge b-s">ESRI WORLD IMAGERY</span>
-      </div>
-      <div class="lm-map-frame" id="lm-map-frame">
-        <iframe id="lm-iframe" src="/map" title="Live Detection Map"></iframe>
-        <div class="lm-offline" id="lm-offline" style="display:none;">
-          <div class="lm-offline-title">&#9888; Backend Offline</div>
-          <div style="color:var(--muted);font-size:.65rem;">Start the server first:</div>
-          <div class="lm-offline-cmd">.venv\Scripts\python.exe dashboard\app.py --port 8080</div>
-          <div style="color:var(--muted);font-size:.63rem;">then navigate to <span style="color:var(--accent);">http://127.0.0.1:8080/openmine</span></div>
-          <button class="lm-retry-btn" onclick="retryLiveMap()">RETRY CONNECTION</button>
+      <!-- SYSTEM STATUS -->
+      <div class="side-panel" style="margin-top:10px;">
+        <div class="side-panel-header">
+          <span class="side-panel-title">SYSTEM STATUS</span>
         </div>
-      </div>
-      <div class="map-legend">
-        <div class="leg-item"><div class="leg-rect" style="background:#FF0000;"></div>Critical risk</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#FF6600;"></div>High risk</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#CC8800;"></div>Medium risk</div>
-        <div class="leg-item"><div class="leg-rect" style="background:#228B22;"></div>Legal activity</div>
-        <div class="leg-item"><div class="leg-rect" style="background:rgba(255,153,51,.3);border:1px solid #FF9933;"></div>Lease boundary</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Charts row -->
-  <div class="grid2 fi" style="max-width:1300px;margin:0 auto 1.5rem;">
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title">Temporal NDVI Trend &mdash; Quarterly 2019&ndash;2024</span>
-        <span class="badge b-ok" id="lm-ndvi-badge">LIVE API</span>
-      </div>
-      <div style="padding:1rem;height:260px;"><canvas id="lm-ndvi-chart"></canvas></div>
-      <div style="padding:.6rem 1.2rem;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);">
-        Source: /api/temporal/periods &middot; Sentinel-2 NDVI mean per quarter &middot; Planetary Computer
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title">Risk Level Distribution &mdash; Live Detections</span>
-        <span class="badge b-w" id="lm-risk-badge">LIVE API</span>
-      </div>
-      <div style="padding:1rem;height:260px;display:flex;align-items:center;justify-content:center;">
-        <canvas id="lm-risk-chart"></canvas>
-      </div>
-      <div style="padding:.6rem 1.2rem;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);">
-        Source: /api/stats &middot; Detection counts by risk classification
-      </div>
-    </div>
-  </div>
-
-  <!-- Detection area chart -->
-  <div style="max-width:1300px;margin:0 auto 1.5rem;" class="fi">
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title">Mining Area Growth &mdash; Synthetic Model vs Live Pipeline</span>
-        <span class="badge b-d">COMPARATIVE</span>
-      </div>
-      <div style="padding:1rem;height:220px;"><canvas id="lm-area-chart"></canvas></div>
-      <div style="padding:.6rem 1.2rem;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);">
-        Synthetic model (canvas) vs real Planetary Computer pipeline &middot; both covering Jharkhand AOI
-      </div>
-    </div>
-  </div>
-
-  <!-- Math panel -->
-  <div style="max-width:1300px;margin:0 auto;" class="fi">
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-title">Detection Mathematics &mdash; Formulas, Weights &amp; Statistics</span>
-        <span class="badge b-s">METHODOLOGY</span>
-      </div>
-      <div class="math-grid">
-
-        <div class="math-block">
-          <div class="math-block-title">SPECTRAL INDICES</div>
-          <div class="math-formula">
-            <div class="mf-eq">NDVI = (NIR &minus; Red) / (NIR + Red)</div>
-            <div class="mf-note">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (B08 &minus; B04) / (B08 + B04)</div>
-            <div class="mf-eq" style="margin-top:.5rem;">BSI = (SWIR + Red &minus; NIR &minus; Blue)</div>
-            <div class="mf-note">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/ (SWIR + Red + NIR + Blue)</div>
-            <div class="mf-eq" style="margin-top:.5rem;">NDWI = (Green &minus; NIR) / (Green + NIR)</div>
-            <div class="mf-note">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (B03 &minus; B08) / (B03 + B08)</div>
-            <div class="mf-eq" style="margin-top:.5rem;">NBR = (NIR &minus; SWIR) / (NIR + SWIR)</div>
-            <div class="mf-note">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (B08 &minus; B11) / (B08 + B11)</div>
-            <div style="margin-top:.8rem;font-size:.6rem;color:var(--muted);">Range: [&minus;1, +1] &middot; Normalised before fusion</div>
+        <div class="sys-row">
+          <span class="sys-dot green"></span>
+          <div>
+            <div class="sys-label">Active Satellites</div>
+            <div class="sys-value">4 (RISAT-2B, CARTOSAT-3)</div>
           </div>
         </div>
-
-        <div class="math-block">
-          <div class="math-block-title">WEIGHTED FUSION SCORE</div>
-          <div class="math-formula">
-            <div class="mf-eq">S = &Sigma; w<sub>i</sub> &middot; norm(&Delta;Index<sub>i</sub>)</div>
-            <div class="mf-note">&nbsp;&nbsp;&nbsp;where &Delta;Index = After &minus; Before</div>
-            <div style="margin-top:.8rem;">
-              <div>w<sub>NDVI</sub> &nbsp;= <span class="mf-hi">0.35</span> &nbsp;&nbsp;vegetation loss</div>
-              <div>w<sub>BSI</sub> &nbsp;&nbsp;= <span class="mf-hi">0.30</span> &nbsp;&nbsp;bare soil gain</div>
-              <div>w<sub>NDWI</sub> = <span class="mf-hi">0.20</span> &nbsp;&nbsp;water turbidity</div>
-              <div>w<sub>NBR</sub> &nbsp;&nbsp;= <span class="mf-hi">0.15</span> &nbsp;&nbsp;land disturbance</div>
-            </div>
-            <div style="margin-top:.6rem;border-top:1px solid var(--border);padding-top:.6rem;">
-              <span class="mf-hi">&Sigma; weights = 1.00 &checkmark;</span>
-            </div>
-            <div style="margin-top:.5rem;font-size:.6rem;color:var(--muted);">
-              Threshold &tau; = 0.50 &middot; Flag if S &gt; &tau;
-            </div>
+        <div class="sys-row">
+          <span class="sys-dot amber"></span>
+          <div>
+            <div class="sys-label">ML Pipeline</div>
+            <div class="sys-value" id="pipeline-status">Initialising…</div>
           </div>
         </div>
-
-        <div class="math-block">
-          <div class="math-block-title">ANOMALY DETECTION</div>
-          <div class="math-formula">
-            <div class="mf-eq">z = (x &minus; &mu;) / &sigma;</div>
-            <div class="mf-note">&nbsp;&nbsp;&nbsp;z-score relative to baseline year</div>
-            <div style="margin-top:.8rem;">
-              <div>&mu; (baseline) = <span class="mf-hi">0.3241</span></div>
-              <div>&sigma; (std dev) &nbsp;= <span class="mf-hi">0.0371</span></div>
-              <div>alert threshold = &mu; + &sigma; = <span class="mf-warn">0.3612</span></div>
-            </div>
-            <div style="margin-top:.6rem;border-top:1px solid var(--border);padding-top:.6rem;">
-              <div class="mf-warn">2022: z = +1.19 &rarr; SUSPECTED</div>
-              <div class="mf-danger">2023: z = +1.50 &rarr; CRITICAL</div>
-            </div>
-            <div style="margin-top:.5rem;font-size:.6rem;color:var(--muted);">
-              2 / 5 years exceed threshold
-            </div>
+        <div class="sys-row">
+          <span class="sys-dot green"></span>
+          <div>
+            <div class="sys-label">API Server</div>
+            <div class="sys-value">Online · Port 5000</div>
           </div>
         </div>
+      </div>
+    </aside>
 
+    <!-- ───────────── MAP ───────────── -->
+    <main class="map-container">
+      <div class="map-header">
+        <span class="map-title">MINING ACTIVITY WATCH — JHARKHAND / ODISHA / CHHATTISGARH</span>
+        <div class="map-controls">
+          <select class="map-select" id="aoi-select">
+            <option value="jharkhand">Jharkhand (Dhanbad / Bokaro)</option>
+            <option value="odisha">Odisha (Angul / Talcher)</option>
+            <option value="chhattisgarh">Chhattisgarh (Korba)</option>
+          </select>
+          <button class="map-btn" id="btn-refresh" onclick="refreshData()">↻ Refresh</button>
+        </div>
       </div>
 
-      <!-- Extra stats row -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border-top:1px solid var(--border);">
-        <div style="padding:1rem;border-right:1px solid var(--border);text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;color:var(--accent);">477 ha</div>
-          <div style="font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:.3rem;">FLAGGED AT &tau;&gt;0.50</div>
+      <!-- TIME SLIDER -->
+      <div class="time-slider-bar">
+        <span class="ts-label">Baseline</span>
+        <div class="ts-track">
+          <input type="range" id="time-slider" min="0" max="11" value="11" step="1" />
+          <div class="ts-ticks">
+            <span>Jan 2022</span><span>Jun 2022</span><span>Jan 2023</span>
+            <span>Jun 2023</span><span>Jan 2024</span><span>Dec 2024</span>
+          </div>
         </div>
-        <div style="padding:1rem;border-right:1px solid var(--border);text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;color:var(--danger);">112 ha</div>
-          <div style="font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:.3rem;">CRITICAL ZONE &gt;65%</div>
+        <span class="ts-current" id="ts-current">Dec 2024</span>
+        <button class="ts-play" id="ts-play" onclick="togglePlay()">▶</button>
+      </div>
+
+      <div id="map"></div>
+
+      <!-- MAP LEGEND -->
+      <div class="map-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#00ff88;"></span>Approved zones</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#ff3b3b;"></span>Illegal / suspected</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#f0a500;"></span>High-risk hotspot</div>
+      </div>
+
+      <!-- INDEX TABS -->
+      <div class="index-tabs">
+        <button class="idx-tab active" onclick="switchIndex('ndvi',this)">NDVI</button>
+        <button class="idx-tab" onclick="switchIndex('bsi',this)">Bare Soil</button>
+        <button class="idx-tab" onclick="switchIndex('ndwi',this)">Water</button>
+        <button class="idx-tab" onclick="switchIndex('turbidity',this)">Turbidity</button>
+        <button class="idx-tab highlight" onclick="switchIndex('mining',this)">Mining Prob.</button>
+      </div>
+    </main>
+
+    <!-- ───────────── RIGHT SIDEBAR ───────────── -->
+    <aside class="sidebar-right">
+
+      <!-- KEY METRICS -->
+      <div class="side-panel">
+        <div class="side-panel-header">
+          <span class="side-panel-title">KEY METRICS</span>
+          <span class="panel-menu">···</span>
         </div>
-        <div style="padding:1rem;border-right:1px solid var(--border);text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;color:var(--warn);">0.672</div>
-          <div style="font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:.3rem;">PEAK FUSION SCORE</div>
+        <div class="kpi-row">
+          <div class="kpi-label">Illegal Sites Detected</div>
+          <div class="kpi-value" id="kpi-sites">147 <span class="kpi-delta up">↑ 12%</span></div>
         </div>
-        <div style="padding:1rem;text-align:center;">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;color:var(--sky);">+34%</div>
-          <div style="font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:.3rem;">MINE EXPANSION 2019&rarr;2023</div>
+        <canvas id="sparkline" height="40"></canvas>
+
+        <div class="mini-divider"></div>
+        <div class="kpi-row">
+          <div class="kpi-label">Mining Frequency</div>
+          <span class="kpi-tag">Heatmap</span>
+        </div>
+        <canvas id="heatmap-chart" height="50"></canvas>
+
+        <div class="mini-divider"></div>
+        <div class="kpi-row">
+          <div class="kpi-label">Vegetation Loss Rate</div>
+        </div>
+        <canvas id="veg-chart" height="50"></canvas>
+
+        <div class="mini-divider"></div>
+        <div class="kpi-row">
+          <div class="kpi-label">Area Monitored</div>
+          <div class="kpi-value">8.4M km²</div>
         </div>
       </div>
-    </div>
+
+      <!-- DETECTION STATISTICS -->
+      <div class="side-panel" style="margin-top:10px;">
+        <div class="side-panel-header">
+          <span class="side-panel-title">DETECTION STATISTICS</span>
+        </div>
+        <div class="donut-row">
+          <canvas id="donut-chart" width="90" height="90"></canvas>
+          <div class="donut-legend">
+            <div class="donut-item"><span class="donut-dot" style="background:#f0a500;"></span>Illegal <strong
+                id="pct-illegal">24%</strong></div>
+            <div class="donut-item"><span class="donut-dot" style="background:#00b96b;"></span>Approved <strong
+                id="pct-approved">76%</strong></div>
+          </div>
+        </div>
+        <div class="kpi-row" style="margin-top:8px;">
+          <div class="kpi-label">Detections last 24h</div>
+          <div class="kpi-value" id="kpi-24h">38 <span style="color:#888;font-size:11px;">(31 validated)</span></div>
+        </div>
+      </div>
+
+      <!-- AI IMPACT REPORT -->
+      <div class="side-panel" style="margin-top:10px;">
+        <div class="side-panel-header">
+          <span class="side-panel-title">AI IMPACT REPORT</span>
+        </div>
+        <div class="ai-row">
+          <div class="ai-icon">AI</div>
+          <div>
+            <div class="ai-label">Detection Accuracy</div>
+            <div class="ai-value" id="ai-accuracy">94.7%</div>
+          </div>
+        </div>
+        <div class="ai-bar-wrap">
+          <div class="ai-bar" style="width:94.7%;"></div>
+        </div>
+        <div class="ai-row" style="margin-top:10px;">
+          <div class="ai-icon" style="background:rgba(0,185,107,0.15);color:#00b96b;">↻</div>
+          <div>
+            <div class="ai-label">Real-time Identification</div>
+            <div class="ai-value" id="ai-realtime">88%</div>
+          </div>
+        </div>
+        <div class="ai-bar-wrap">
+          <div class="ai-bar" style="width:88%;background:#00b96b;"></div>
+        </div>
+        <div class="mini-divider"></div>
+        <div style="font-size:10px;color:#555;line-height:1.5;">
+          Model: Random Forest + Spectral RF<br>
+          Data: Sentinel-2 L2A · Planetary Computer<br>
+          Last sync: <span id="last-sync">--</span>
+        </div>
+      </div>
+
+    </aside>
   </div>
-</section>
 
-<footer>
-  <div style="margin-bottom:.5rem;"><a href="#">OpenMine Watch</a> &mdash; Open Source Illegal Mining Detection via Satellite Remote Sensing</div>
-  <div>Sentinel-2 &copy; ESA / Copernicus &middot; OpenStreetMap contributors &middot; MIT License</div>
-</footer>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modal">
-  <div class="modal-box">
-    <div class="modal-hdr">
-      <span class="modal-title" id="modalTitle">Map View</span>
-      <button class="modal-close" id="modalClose">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <canvas id="modal-canvas"></canvas>
-      <div class="modal-info" id="modalInfo"></div>
-    </div>
-  </div>
-</div>
-
-<script>
-// ── RNG + NOISE ────────────────────────────────────────────────────
-function rng32(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
-function lerp(a,b,t){return a+(b-a)*Math.min(1,Math.max(0,t));}
-const W=480,H=360;
-function makeNoise(seed,scale,oct){
-  const r=rng32(seed),m=new Float32Array(W*H);
-  for(let o=0;o<oct;o++){const f=Math.pow(2,o)*scale,a=1/Math.pow(2,o+1);
-    for(let y=0;y<H;y++) for(let x=0;x<W;x++)
-      m[y*W+x]+=Math.sin(x/W*f*6.28+r()*6.28)*Math.cos(y/H*f*6.28+r()*6.28)*a;}
-  let mn=Infinity,mx=-Infinity;
-  for(let i=0;i<m.length;i++){if(m[i]<mn)mn=m[i];if(m[i]>mx)mx=m[i];}
-  const rg=mx-mn||1;for(let i=0;i<m.length;i++)m[i]=(m[i]-mn)/rg;return m;
-}
-const terrain=makeNoise(42,3,5);
-const SPOTS=[{cx:180,cy:130,r:72,s:.92},{cx:300,cy:210,r:55,s:.82},{cx:110,cy:250,r:42,s:.74},{cx:360,cy:95,r:35,s:.68},{cx:230,cy:310,r:28,s:.60},{cx:420,cy:260,r:20,s:.55}];
-const mineRaw=new Float32Array(W*H);
-for(let y=0;y<H;y++) for(let x=0;x<W;x++){let v=0;for(const sp of SPOTS){const d=Math.sqrt((x-sp.cx)**2+(y-sp.cy)**2);v+=sp.s*Math.max(0,1-d/sp.r);}mineRaw[y*W+x]=Math.min(1,v);}
-const noise2=makeNoise(77,2,4);
-const yearMineScale={2019:.35,2020:.52,2021:.67,2022:.85,2023:1.0};
-function getMineMap(year){const s=yearMineScale[year]||1;const m=new Float32Array(W*H);for(let i=0;i<m.length;i++)m[i]=Math.min(1,mineRaw[i]*s);return m;}
-function getNDVI(year){const mine=getMineMap(year);const r=rng32(year*17);const m=new Float32Array(W*H);for(let i=0;i<m.length;i++)m[i]=Math.max(0,Math.min(1,terrain[i]*0.78+0.08-mine[i]*0.9+(r()-.5)*0.04));return m;}
-function getFusedScore(yearA,yearB){
-  const nA=getNDVI(yearA),nB=getNDVI(yearB),mA=getMineMap(yearA),mB=getMineMap(yearB);
-  function norm(arr){let mn=Infinity,mx=-Infinity;for(let i=0;i<arr.length;i++){if(arr[i]<mn)mn=arr[i];if(arr[i]>mx)mx=arr[i];}const rg=mx-mn||1;const o=new Float32Array(arr.length);for(let i=0;i<arr.length;i++)o[i]=Math.max(0,(arr[i]-mn)/rg);return o;}
-  const dNdvi=new Float32Array(W*H),dBsi=new Float32Array(W*H),dNdwi=new Float32Array(W*H),dNbr=new Float32Array(W*H);
-  for(let i=0;i<W*H;i++){dNdvi[i]=nA[i]-nB[i];dBsi[i]=mB[i]-mA[i]+noise2[i]*0.15;dNdwi[i]=(mB[i]-mA[i])*0.7+noise2[W*H-1-i]*0.12;dNbr[i]=(nA[i]-nB[i])*0.8+mB[i]*0.2;}
-  const n1=norm(dNdvi),n2=norm(dBsi),n3=norm(dNdwi),n4=norm(dNbr);
-  const score=new Float32Array(W*H);for(let i=0;i<W*H;i++)score[i]=.35*n1[i]+.30*n2[i]+.20*n3[i]+.15*n4[i];
-  return{score,n1,n2,n3,n4};
-}
-function rdYlGn(t){if(t<.5){const u=t*2;return[~~lerp(215,254,u),~~lerp(48,224,u),~~lerp(39,139,u)];}const u=(t-.5)*2;return[~~lerp(254,26,u),~~lerp(224,150,u),~~lerp(139,80,u)];}
-function hotmap(t){if(t<.33)return[~~lerp(10,220,t*3),0,~~lerp(20,10,t*3)];if(t<.66)return[220,~~lerp(0,160,(t-.33)*3),0];return[220,~~lerp(160,255,(t-.66)*3),~~lerp(0,255,(t-.66)*3)];}
-function orRd(t){return[~~lerp(254,189,t),~~lerp(240,0,t),~~lerp(217,0,t)];}
-function rdBu(t){if(t<.5){const u=t*2;return[~~lerp(5,240,u),~~lerp(48,120,u),~~lerp(97,30,u)];}const u=(t-.5)*2;return[~~lerp(240,103,u),~~lerp(120,169,u),~~lerp(30,207,u)];}
-function ylOrRd(t){if(t<.5){const u=t*2;return[~~lerp(255,252,u),~~lerp(255,141,u),~~lerp(178,89,u)];}const u=(t-.5)*2;return[~~lerp(252,189,u),~~lerp(141,0,u),~~lerp(89,38,u)];}
-function lcColor(cls){return({forest:[45,138,45],water:[51,153,255],degraded:[255,136,0],mining:[255,34,34]})[cls]||[100,100,100];}
-function fillCanvas(canvas,dataFn,colorFn,alphaFn){
-  canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');const img=ctx.createImageData(W,H);
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){const v=dataFn(x,y);const c=colorFn(v);const a=alphaFn?alphaFn(v):255;const i=(y*W+x)*4;img.data[i]=c[0];img.data[i+1]=c[1];img.data[i+2]=c[2];img.data[i+3]=a;}
-  ctx.putImageData(img,0,0);return canvas;
-}
-function drawContours(ctx,scoreArr,levels,colors,widths){
-  ctx.save();const scX=ctx.canvas.width/W,scY=ctx.canvas.height/H;
-  for(let li=0;li<levels.length;li++){const t=levels[li];ctx.strokeStyle=colors[li];ctx.lineWidth=widths[li];ctx.globalAlpha=.85;ctx.beginPath();
-    for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){const v=scoreArr[y*W+x],r=scoreArr[y*W+x+1],d=scoreArr[(y+1)*W+x];if((v>t)!==(r>t)||(v>t)!==(d>t)){ctx.moveTo(x*scX,y*scY);ctx.lineTo((x+1)*scX,(y+1)*scY);}}
-    ctx.stroke();}ctx.globalAlpha=1;ctx.restore();
-}
-let selectedYear=2019,threshold=0.50,currentScore=null;
-function renderNDVI(){
-  const b=document.getElementById('ndviBefore'),a=document.getElementById('ndviAfter');
-  const nb=getNDVI(selectedYear),na=getNDVI(2023);
-  fillCanvas(b,(x,y)=>nb[y*W+x],t=>rdYlGn(t));fillCanvas(a,(x,y)=>na[y*W+x],t=>rdYlGn(t));
-  document.getElementById('beforeLabel').textContent=`NDVI ${selectedYear} — Baseline`;
-}
-function renderScore(){
-  const{score}=getFusedScore(selectedYear,2023);currentScore=score;
-  const canvas=document.getElementById('miningScoreCanvas');
-  fillCanvas(canvas,(x,y)=>score[y*W+x],t=>hotmap(t));
-  const ctx=canvas.getContext('2d');const img=ctx.createImageData(W,H);
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){const v=score[y*W+x];const i=(y*W+x)*4;if(v<threshold){img.data[i+3]=0;continue;}img.data[i]=255;img.data[i+1]=255;img.data[i+2]=255;img.data[i+3]=40;}
-  ctx.putImageData(img,0,0);
-  const flagged=score.reduce((n,v)=>n+(v>threshold?1:0),0);
-  document.getElementById('pxCount').textContent=`${(flagged*0.36).toFixed(0)} ha flagged`;
-  document.getElementById('scoreLabel').textContent=`THRESHOLD: ${threshold.toFixed(2)}`;
-}
-function renderIndices(){
-  const{score,n1,n2,n3,n4}=getFusedScore(selectedYear,2023);
-  [{id:'idx0',data:n1,cm:t=>rdYlGn(t<.5?t*1.3:t)},{id:'idx1',data:n2,cm:orRd},{id:'idx2',data:n3,cm:rdBu},{id:'idx3',data:n4,cm:ylOrRd},{id:'idx4',data:score,cm:hotmap}]
-  .forEach(({id,data,cm})=>{const c=document.getElementById(id);c.width=W;c.height=H;fillCanvas(c,(x,y)=>data[y*W+x],cm);});
-}
-function renderProbMap(){
-  const canvas=document.getElementById('probMap');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
-  const img=ctx.createImageData(W,H);
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){const v=terrain[y*W+x]*0.55+0.2;const g=~~(v*75+20);const i=(y*W+x)*4;img.data[i]=g;img.data[i+1]=g;img.data[i+2]=g+8;img.data[i+3]=130;}
-  ctx.putImageData(img,0,0);
-  const{score}=getFusedScore(selectedYear,2023);const img2=ctx.createImageData(W,H);
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){const v=score[y*W+x];if(v<0.18){img2.data[(y*W+x)*4+3]=0;continue;}const c=ylOrRd(v);const i=(y*W+x)*4;img2.data[i]=c[0];img2.data[i+1]=c[1];img2.data[i+2]=c[2];img2.data[i+3]=225;}
-  ctx.putImageData(img2,0,0);drawContours(ctx,score,[.35,.50,.65],['#ffff00','#ff8800','#ff0000'],[1.2,1.8,2.2]);
-  ctx.font='bold 9px Space Mono,monospace';ctx.fillStyle='#fff';ctx.globalAlpha=.85;ctx.fillText('35%',8,60);ctx.fillText('50%',8,78);ctx.fillText('65%',8,96);ctx.globalAlpha=1;
-}
-function renderLC(canvasId,year,showDiff){
-  const canvas=document.getElementById(canvasId);canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');const img=ctx.createImageData(W,H);
-  const mine19=getMineMap(2019),mine23=getMineMap(year),r=rng32(year*31);
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const mine=mine23[y*W+x],base=terrain[y*W+x];let cls;
-    if(mine>0.65)cls='mining';else if(mine>0.33)cls='degraded';else if(base<0.22+r()*0.1)cls='water';else cls='forest';
-    let c=lcColor(cls);
-    if(showDiff){const m19=mine19[y*W+x];let cls19;if(m19>0.65*0.35)cls19='mining';else if(m19>0.33*0.35)cls19='degraded';else if(base<0.22)cls19='water';else cls19='forest';
-      if(cls===cls19)c=[40,50,60];else if(cls==='mining')c=[255,34,34];else if(cls==='degraded')c=[255,136,0];else if(cls==='forest')c=[45,138,45];else c=[51,153,255];}
-    const i=(y*W+x)*4;img.data[i]=c[0];img.data[i+1]=c[1];img.data[i+2]=c[2];img.data[i+3]=255;}
-  ctx.putImageData(img,0,0);
-}
-function renderFP(){
-  ['fpBefore','fpAfter'].forEach((id,fi)=>{
-    const canvas=document.getElementById(id);canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
-    const img=ctx.createImageData(W,H);
-    for(let y=0;y<H;y++) for(let x=0;x<W;x++){const v=terrain[y*W+x]*0.5+0.2;const g=~~(v*65+20);const i=(y*W+x)*4;img.data[i]=g;img.data[i+1]=g;img.data[i+2]=g+8;img.data[i+3]=140;}
-    ctx.putImageData(img,0,0);
-    const{score}=getFusedScore(2019,2023);const img2=ctx.createImageData(W,H);
-    for(let y=0;y<H;y++) for(let x=0;x<W;x++){const v=score[y*W+x];if(v<0.18){img2.data[(y*W+x)*4+3]=0;continue;}if(fi===1&&x<W*0.28&&y<H*0.38){img2.data[(y*W+x)*4+3]=0;continue;}const c=ylOrRd(v);const i=(y*W+x)*4;img2.data[i]=c[0];img2.data[i+1]=c[1];img2.data[i+2]=c[2];img2.data[i+3]=215;}
-    ctx.putImageData(img2,0,0);});
-}
-function renderAll(){renderNDVI();renderScore();renderIndices();renderProbMap();renderLC('lc2019',2019,false);renderLC('lc2023',2023,false);renderFP();}
-renderAll();
-
-document.getElementById('yearBtns').addEventListener('click',e=>{
-  const btn=e.target.closest('.yr-btn');if(!btn)return;
-  document.querySelectorAll('#yearBtns .yr-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');selectedYear=parseInt(btn.dataset.year);
-  renderNDVI();renderScore();renderIndices();renderProbMap();
-});
-document.getElementById('threshSlider').addEventListener('input',function(){threshold=this.value/100;document.getElementById('threshVal').textContent=threshold.toFixed(2);renderScore();});
-document.getElementById('lcSideBySide').addEventListener('click',function(){this.classList.add('active');document.getElementById('lcOverlay').classList.remove('active');document.getElementById('lc2023Title').textContent='Land Cover 2023';renderLC('lc2019',2019,false);renderLC('lc2023',2023,false);});
-document.getElementById('lcOverlay').addEventListener('click',function(){this.classList.add('active');document.getElementById('lcSideBySide').classList.remove('active');document.getElementById('lc2023Title').textContent='Change Map (2019→2023)';renderLC('lc2019',2019,false);renderLC('lc2023',2023,true);});
-document.getElementById('idxGrid').addEventListener('click',e=>{const card=e.target.closest('.idx-card');if(!card)return;document.querySelectorAll('.idx-card').forEach(c=>c.classList.remove('active'));card.classList.add('active');});
-
-function addMapTooltip(canvasId,tooltipId,valueFn,labelFn){
-  const canvas=document.getElementById(canvasId),tt=document.getElementById(tooltipId);if(!canvas||!tt)return;
-  canvas.addEventListener('mousemove',e=>{const rect=canvas.getBoundingClientRect();const px=Math.floor((e.clientX-rect.left)/rect.width*W);const py=Math.floor((e.clientY-rect.top)/rect.height*H);if(px<0||py<0||px>=W||py>=H){tt.style.display='none';return;}const v=valueFn(px,py);tt.style.display='block';tt.style.left=(e.clientX-rect.left+10)+'px';tt.style.top=(e.clientY-rect.top-30)+'px';tt.textContent=labelFn(px,py,v);});
-  canvas.addEventListener('mouseleave',()=>{tt.style.display='none';});
-}
-addMapTooltip('ndviBefore','tt-ndvi-before',(x,y)=>getNDVI(selectedYear)[y*W+x],(x,y,v)=>`[${x},${y}] NDVI ${selectedYear}: ${v.toFixed(3)}`);
-addMapTooltip('ndviAfter','tt-ndvi-after',(x,y)=>getNDVI(2023)[y*W+x],(x,y,v)=>`[${x},${y}] NDVI 2023: ${v.toFixed(3)}`);
-addMapTooltip('miningScoreCanvas','tt-score',(x,y)=>currentScore?currentScore[y*W+x]:0,(x,y,v)=>`[${x},${y}] Score: ${v.toFixed(3)} ${v>threshold?'⚠ FLAGGED':''}`);
-addMapTooltip('probMap','tt-prob',(x,y)=>{const{score}=getFusedScore(selectedYear,2023);return score[y*W+x];},(x,y,v)=>`[${x},${y}] P(mining): ${(v*100).toFixed(1)}%`);
-addMapTooltip('fpBefore','tt-fp-before',(x,y)=>{const{score}=getFusedScore(2019,2023);return score[y*W+x];},(x,y,v)=>`[${x},${y}] Score: ${v.toFixed(3)}`);
-addMapTooltip('fpAfter','tt-fp-after',(x,y)=>{const{score}=getFusedScore(2019,2023);if(x<W*0.28&&y<H*0.38)return 0;return score[y*W+x];},(x,y,v)=>`[${x},${y}] Filtered: ${v.toFixed(3)} ${v===0?'(OSM masked)':''}`);
-
-const modal=document.getElementById('modal'),modalCanvas=document.getElementById('modal-canvas'),modalTitle=document.getElementById('modalTitle'),modalInfo=document.getElementById('modalInfo');
-const MAP_INFO={
-  ndviBefore:`<b>NDVI Before (${selectedYear})</b><br><br>NDVI = (NIR − Red) / (NIR + Red)<br><br>Green = healthy vegetation (>0.5)<br>Yellow = sparse vegetation<br>Red = bare soil / non-veg`,
-  ndviAfter:`<b>NDVI 2023 — After Mining</b><br><br>Red patches show vegetation destroyed by extraction activity.`,
-  miningScoreCanvas:`<b>Fused Mining Score</b><br><br>NDVI×0.35 + BSI×0.30 + NDWI×0.20 + NBR×0.15<br><br>Threshold: ${threshold.toFixed(2)}`,
-  probMap:`<b>Mining Probability Map</b><br><br>Yellow: 35%<br>Orange: 50%<br>Red: 65% (critical)<br><br>Affected >35%: 1,340 ha<br>Critical >65%: 112 ha`,
-  lc2019:`<b>Land Cover 2019 — Baseline</b><br><br>K-Means (k=4) clustering on 4-band feature space.`,
-  lc2023:`<b>Land Cover 2023 / Change Map</b><br><br>Red = newly active mining, Orange = newly degraded.`,
-  fpBefore:`<b>Before OSM Filter</b><br><br>Raw probability score including urban/farmland false positives.`,
-  fpAfter:`<b>After OSM Filter</b><br><br>393 ha urban/farmland removed via OpenStreetMap Overpass API.`,
-};
-document.addEventListener('click',e=>{
-  const btn=e.target.closest('.zoom-btn');if(!btn)return;
-  const src=document.getElementById(btn.dataset.target);if(!src)return;
-  modalTitle.textContent=btn.dataset.title||'Map Zoom';
-  modalCanvas.width=src.width;modalCanvas.height=src.height;modalCanvas.style.maxWidth='min(70vw,800px)';
-  const ctx=modalCanvas.getContext('2d');ctx.drawImage(src,0,0);
-  if(btn.dataset.target==='probMap'){const{score}=getFusedScore(selectedYear,2023);drawContours(ctx,score,[.35,.50,.65],['#ffff00','#ff8800','#ff0000'],[1.5,2.2,2.8]);}
-  modalInfo.innerHTML=MAP_INFO[btn.dataset.target]||'';modal.classList.add('open');document.body.style.overflow='hidden';
-});
-document.getElementById('modalClose').addEventListener('click',()=>{modal.classList.remove('open');document.body.style.overflow='';});
-modal.addEventListener('click',e=>{if(e.target===modal){modal.classList.remove('open');document.body.style.overflow='';}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){modal.classList.remove('open');document.body.style.overflow='';}});
-
-// ── CHARTS ─────────────────────────────────────────────────────────
-const YEARS=[2019,2020,2021,2022,2023],SCORES=[0.3092,0.3187,0.3341,0.3682,0.3798],NDVI_VALS=[0.412,0.398,0.381,0.354,0.339],MEAN=0.3241,THRESH=0.3612;
-const ptColors=SCORES.map(s=>s>MEAN+2*(THRESH-MEAN)?'#ff3a3a':s>THRESH?'#ff8c42':'#00e5a0');
-const trendChart=new Chart(document.getElementById('trendChart').getContext('2d'),{type:'line',
-  data:{labels:YEARS,datasets:[
-    {label:'Alert Threshold (μ+1σ)',data:YEARS.map(()=>THRESH),borderColor:'#ff3a3a',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false},
-    {label:'Baseline μ',data:YEARS.map(()=>MEAN),borderColor:'rgba(0,229,160,.35)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
-    {label:'Mining Score',data:SCORES,borderColor:'#38bdf8',borderWidth:2.5,pointBackgroundColor:ptColors,pointBorderColor:'#070b0f',pointRadius:8,pointHoverRadius:11,fill:{target:{value:THRESH},above:'rgba(255,58,58,.09)',below:'rgba(0,229,160,.05)'},tension:.35},
-  ]},
-  options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{labels:{color:'#4a6880',font:{family:'Space Mono',size:9},boxWidth:12}}},
-    scales:{x:{ticks:{color:'#4a6880',font:{family:'Space Mono',size:9}},grid:{color:'#1e2d3d'}},y:{ticks:{color:'#4a6880',font:{family:'Space Mono',size:9}},grid:{color:'#1e2d3d'},min:.28,max:.42}},
-    onClick:(evt,els)=>{if(!els.length)return;const idx=els[0].index;document.querySelectorAll('#alertTbody tr').forEach((r,i)=>{r.classList.toggle('selected',i===idx);});}
-  }
-});
-new Chart(document.getElementById('ndviTrend').getContext('2d'),{type:'bar',
-  data:{labels:YEARS,datasets:[{label:'Mean NDVI',data:NDVI_VALS,backgroundColor:NDVI_VALS.map(v=>v>0.38?'rgba(0,229,160,.45)':'rgba(255,58,58,.45)'),borderColor:NDVI_VALS.map(v=>v>0.38?'#00e5a0':'#ff3a3a'),borderWidth:1.5,borderRadius:2}]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#4a6880',font:{family:'Space Mono',size:9},boxWidth:12}}},scales:{x:{ticks:{color:'#4a6880',font:{family:'Space Mono',size:9}},grid:{color:'#1e2d3d'}},y:{ticks:{color:'#4a6880',font:{family:'Space Mono',size:9}},grid:{color:'#1e2d3d'},min:.28,max:.46}}}
-});
-const alertData=[{year:2019,score:0.3092,status:'NORMAL'},{year:2020,score:0.3187,status:'NORMAL'},{year:2021,score:0.3341,status:'NORMAL'},{year:2022,score:0.3682,status:'SUSPECTED'},{year:2023,score:0.3798,status:'CRITICAL'}];
-const tbody=document.getElementById('alertTbody');
-alertData.forEach((d,i)=>{
-  const cls=d.status==='CRITICAL'?'b-d':d.status==='SUSPECTED'?'b-w':'b-ok';
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${d.year}</td><td style="color:var(--head)">${d.score.toFixed(4)}</td><td style="color:${d.score>MEAN?'var(--danger)':'var(--accent)'}">+${(d.score-MEAN).toFixed(4)}</td><td><span class="chip badge ${cls}">${d.status}</span></td>`;
-  tr.addEventListener('click',()=>{document.querySelectorAll('#alertTbody tr').forEach(r=>r.classList.remove('selected'));tr.classList.add('selected');trendChart.data.datasets[2].pointRadius=SCORES.map((_,j)=>j===i?14:8);trendChart.update();});
-  tbody.appendChild(tr);
-});
-new Chart(document.getElementById('lcChart').getContext('2d'),{type:'doughnut',
-  data:{labels:['Forest','Water','Degraded','Mining'],datasets:[
-    {label:'2019',data:[1820,210,640,330],backgroundColor:['rgba(45,138,45,.72)','rgba(51,153,255,.72)','rgba(255,136,0,.72)','rgba(255,34,34,.72)'],borderWidth:2,borderColor:'#111923'},
-    {label:'2023',data:[1540,198,820,442],backgroundColor:['rgba(45,138,45,.35)','rgba(51,153,255,.35)','rgba(255,136,0,.35)','rgba(255,34,34,.35)'],borderWidth:2,borderColor:'#111923'},
-  ]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#4a6880',font:{family:'Space Mono',size:8},boxWidth:10}}}}
-});
-new Chart(document.getElementById('filterChart').getContext('2d'),{type:'bar',
-  data:{labels:['Before Filter','After Filter','FP Removed'],datasets:[{data:[1340,947,393],backgroundColor:['rgba(255,140,66,.5)','rgba(0,229,160,.5)','rgba(255,58,58,.5)'],borderColor:['#ff8c42','#00e5a0','#ff3a3a'],borderWidth:1.5,borderRadius:2}]},
-  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4a6880',font:{family:'Space Mono',size:9}},grid:{color:'#1e2d3d'}},y:{ticks:{color:'#8b949e',font:{family:'Space Mono',size:9}},grid:{color:'#1e2d3d'}}}}
-});
-
-// ── COUNTER ANIMATION ─────────────────────────────────────────────
-function animCount(id,target,dec,dur){const el=document.getElementById(id);const t0=performance.now();function step(now){const p=Math.min((now-t0)/dur,1);const v=p*target;el.textContent=dec?v.toFixed(3):Math.round(v).toLocaleString();if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
-setTimeout(()=>{animCount('c1',477,false,2200);animCount('c2',112,false,2200);animCount('c3',0.672,true,2200);animCount('c4',5,false,1600);},300);
-
-document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const id=a.getAttribute('href');if(!id||id==='#')return;const target=document.querySelector(id);if(!target)return;e.preventDefault();const top=target.getBoundingClientRect().top+window.scrollY-68;window.scrollTo({top,behavior:'smooth'});});});
-
-// ── FADE IN ───────────────────────────────────────────────────────
-const obs=new IntersectionObserver(entries=>{entries.forEach(en=>{if(en.isIntersecting)en.target.classList.add('vis');});},{threshold:.08});
-document.querySelectorAll('.fi').forEach(el=>obs.observe(el));
-
-// ── LIVE MAP SECTION ──────────────────────────────────────────────
-const API = '';  // same origin — served from FastAPI at /openmine
-let lmNdviChart = null, lmRiskChart = null;
-
-async function initLiveMap() {
-  const statusEl = document.getElementById('lm-status');
-  const detEl    = document.getElementById('lm-det');
-  const illEl    = document.getElementById('lm-ill');
-  const areaEl   = document.getElementById('lm-area');
-  const offline  = document.getElementById('lm-offline');
-
-  try {
-    const res = await fetch(API + '/api/health', {signal: AbortSignal.timeout(3000)});
-    if (!res.ok) throw new Error('not ok');
-    statusEl.textContent = 'ONLINE';
-    statusEl.style.color = 'var(--accent)';
-    offline.style.display = 'none';
-
-    const [statsRes, tempRes] = await Promise.all([
-      fetch(API + '/api/stats'),
-      fetch(API + '/api/temporal/periods'),
-    ]);
-
-    if (statsRes.ok) {
-      const s = await statsRes.json();
-      detEl.textContent  = s.total_detections ?? '—';
-      illEl.textContent  = s.illegal_count ?? '—';
-      areaEl.textContent = s.total_area_ha ? s.total_area_ha + ' ha' : '—';
-      renderRiskChart(s.by_risk_level || {});
-    }
-
-    if (tempRes.ok) {
-      const t = await tempRes.json();
-      renderLiveNdviChart(t.periods || []);
-      document.getElementById('lm-ndvi-badge').textContent = t.periods?.length + ' PERIODS';
-    }
-
-  } catch(e) {
-    statusEl.textContent = 'OFFLINE';
-    statusEl.style.color = 'var(--danger)';
-    offline.style.display = 'flex';
-  }
-}
-
-function renderLiveNdviChart(periods) {
-  const labels = periods.map(p => p.label);
-  const values = periods.map(p => p.ndvi_mean ?? null);
-  const ctx = document.getElementById('lm-ndvi-chart').getContext('2d');
-  if (lmNdviChart) lmNdviChart.destroy();
-  lmNdviChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'NDVI Mean',
-        data: values,
-        borderColor: '#00e5a0',
-        backgroundColor: 'rgba(0,229,160,.08)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.35,
-        pointRadius: 5,
-        pointBackgroundColor: values.map(v => v === null ? 'transparent' : (v < 0.3 ? '#ff3a3a' : v < 0.4 ? '#ff8c42' : '#00e5a0')),
-        pointBorderColor: '#070b0f',
-        spanGaps: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.parsed.y === null ? 'No data' : `NDVI: ${ctx.parsed.y.toFixed(3)}` } }
-      },
-      scales: {
-        x: { ticks: { color: '#4a6880', font: { family: 'Space Mono', size: 9 }, maxRotation: 45 }, grid: { color: '#1e2d3d' } },
-        y: { ticks: { color: '#4a6880', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1e2d3d' }, min: 0, max: 0.7,
-          title: { display: true, text: 'NDVI', color: '#4a6880', font: { family: 'Space Mono', size: 9 } } }
-      }
-    }
-  });
-}
-
-function renderRiskChart(byRisk) {
-  const ctx = document.getElementById('lm-risk-chart').getContext('2d');
-  if (lmRiskChart) lmRiskChart.destroy();
-  const labels = Object.keys(byRisk);
-  const values = Object.values(byRisk);
-  const colors = { CRITICAL: '#ff3a3a', HIGH: '#ff8c42', MEDIUM: '#cc8800', LOW: '#228B22' };
-  lmRiskChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: labels.map(l => colors[l] || '#4a6880'),
-        borderWidth: 0,
-        hoverOffset: 10,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'right', labels: { color: '#4a6880', font: { family: 'Space Mono', size: 10 }, padding: 14 } }
-      }
-    }
-  });
-}
-
-// Area growth chart (static synthetic vs pipeline model)
-new Chart(document.getElementById('lm-area-chart').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: ['2019', '2020', '2021', '2022', '2023'],
-    datasets: [
-      { label: 'Synthetic Model (ha)', data: [163, 242, 312, 395, 477], backgroundColor: 'rgba(56,189,248,.45)', borderColor: '#38bdf8', borderWidth: 1.5, borderRadius: 2 },
-      { label: 'Pipeline Estimate (ha)', data: [155, 228, 298, 381, 462], backgroundColor: 'rgba(0,229,160,.35)', borderColor: '#00e5a0', borderWidth: 1.5, borderRadius: 2 },
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: '#4a6880', font: { family: 'Space Mono', size: 9 }, boxWidth: 12 } } },
-    scales: {
-      x: { ticks: { color: '#4a6880', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1e2d3d' } },
-      y: { ticks: { color: '#4a6880', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1e2d3d' },
-        title: { display: true, text: 'Hectares', color: '#4a6880', font: { family: 'Space Mono', size: 9 } } }
-    }
-  }
-});
-
-window.retryLiveMap = function() {
-  document.getElementById('lm-iframe').src = '/map?' + Date.now();
-  initLiveMap();
-};
-
-// Init live map when section scrolls into view
-const lmObs = new IntersectionObserver(entries => {
-  if (entries[0].isIntersecting) { initLiveMap(); lmObs.disconnect(); }
-}, { threshold: 0.1 });
-const lmSection = document.getElementById('livemap');
-if (lmSection) lmObs.observe(lmSection);
-</script>
+  <!-- ═══════════════════════════════ SCRIPTS ═══════════════════════════════ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
 </body>
+
 </html>
