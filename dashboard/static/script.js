@@ -509,31 +509,54 @@ function drawDonut(pct) {
   ctx.fillText(pct + '%', cx, cy);
 }
 
-/* ════════════ MINING FREQ HEATMAP ════════════ */
-function drawHeatmap() {
-  const c = document.getElementById('heatmap-chart');
+/* ════════════ MINING ACTIVITY LINE CHART ════════════ */
+function drawMiningActivity() {
+  const c = document.getElementById('mining-activity-chart');
   if (!c) return;
   const ctx = c.getContext('2d');
-  const W = c.offsetWidth || 200, H = 50;
+  const W = c.offsetWidth || 220, H = 50;
   c.width = W; c.height = H;
   ctx.clearRect(0, 0, W, H);
 
-  /* 6x4 grid of mining frequency cells */
-  const cols = 8, rows = 4;
-  const cw = W / cols, ch = H / rows;
-  const data = [
-    [0.1, 0.2, 0.5, 0.9, 0.8, 0.4, 0.2, 0.1],
-    [0.2, 0.4, 0.8, 1.0, 0.9, 0.6, 0.3, 0.1],
-    [0.1, 0.3, 0.6, 0.8, 0.7, 0.5, 0.2, 0.1],
-    [0.1, 0.1, 0.3, 0.5, 0.4, 0.2, 0.1, 0.1],
-  ];
-  data.forEach((row, r) => {
-    row.forEach((val, col) => {
-      const r0 = Math.round(val * 240);
-      const g0 = Math.round((1 - val) * 80);
-      ctx.fillStyle = `rgba(${r0},${g0},20,${0.3 + val * 0.7})`;
-      ctx.fillRect(col * cw + 1, r * ch + 1, cw - 2, ch - 2);
-    });
+  const data = [8, 11, 14, 12, 17, 19, 23, 26, 21, 28, 31, 35];
+  const mx = Math.max(...data), mn = Math.min(...data);
+  const pts = data.map((v, i) => [
+    (i / (data.length - 1)) * W,
+    H - ((v - mn) / (mx - mn)) * (H - 10) - 5
+  ]);
+
+  /* Area fill */
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], H);
+  pts.forEach(p => ctx.lineTo(p[0], p[1]));
+  ctx.lineTo(pts[pts.length - 1][0], H);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(240,165,0,0.08)';
+  ctx.fill();
+
+  /* Line */
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  pts.forEach(p => ctx.lineTo(p[0], p[1]));
+  ctx.strokeStyle = '#f0a500';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  /* Dots at each point */
+  pts.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#f0a500';
+    ctx.fill();
+  });
+
+  /* X-axis labels */
+  const labels = ['Jan', 'Apr', 'Jul', 'Oct', 'Jan', 'Apr', 'Jul', 'Oct', 'Jan', 'Apr', 'Sep', 'Dec'];
+  ctx.fillStyle = '#334455';
+  ctx.font = '7px system-ui';
+  ctx.textAlign = 'center';
+  [0, 3, 6, 9, 11].forEach(i => {
+    ctx.fillText(labels[i], pts[i][0], H - 1);
   });
 }
 
@@ -584,6 +607,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('left-panels').innerHTML = buildDashboardPanel();
   renderAlerts(MOCK_ALERTS);
   updateClock(); setInterval(updateClock, 1000);
-  setTimeout(() => { drawSparkline(); drawVegChart(); drawDonut(24); drawHeatmap(); const ls = document.getElementById('last-sync'); if (ls) ls.textContent = 'Synthetic'; }, 200);
+  setTimeout(() => { drawSparkline(); drawVegChart(); drawDonut(24); drawMiningActivity(); const ls = document.getElementById('last-sync'); if (ls) ls.textContent = 'Synthetic'; }, 200);
   refreshData();
 });
