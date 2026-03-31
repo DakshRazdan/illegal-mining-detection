@@ -25,9 +25,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from src.utils.logger import logger
 from src.types import (
@@ -57,6 +59,10 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+# Mount static and templates
+app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
+templates = Jinja2Templates(directory="dashboard/templates")
 
 # ---------------------------------------------------------------------------
 # In-memory pipeline result store
@@ -155,59 +161,20 @@ def _alert_dict(a: AlertRecord) -> dict[str, Any]:
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def root():
-    """Serve latest dashboard HTML, or a status landing page."""
-    latest = Path("results/demo/latest.html")
-    if latest.exists():
-        return HTMLResponse(content=latest.read_text(encoding="utf-8"))
-
-    # Fallback status page
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Serve the amazing 3D ISRO-style dashboard."""
     loaded = _pipeline_result is not None
     run_id = _pipeline_result.run_id if _pipeline_result else "None"
-    det_count = len(_pipeline_result.detections) if _pipeline_result else 0
-    return HTMLResponse(content=f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Mining Watch — Dashboard</title>
-      <style>
-        body {{ margin:0; background:#0a0f1a; color:#fff;
-               font-family:'Inter',system-ui,sans-serif;
-               display:flex; align-items:center; justify-content:center;
-               height:100vh; }}
-        .card {{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10);
-                border-radius:16px; padding:40px 48px; text-align:center; max-width:480px; }}
-        h1 {{ color:#FF9933; font-weight:500; font-size:24px; margin:0 0 8px; }}
-        p  {{ color:rgba(255,255,255,0.65); font-size:14px; line-height:1.6; }}
-        code {{ background:rgba(255,255,255,0.08); padding:2px 8px;
-                border-radius:6px; font-size:13px; }}
-        a {{ color:#FF9933; text-decoration:none; }}
-        .badge {{ display:inline-block; padding:4px 12px; border-radius:20px;
-                  font-size:12px; margin-top:16px; }}
-        .ok  {{ background:rgba(0,200,83,0.15); color:#00C853; border:1px solid #00C853; }}
-        .warn {{ background:rgba(255,153,51,0.15); color:#FF9933; border:1px solid #FF9933; }}
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <h1>🛰 Mining Watch</h1>
-        <p>Autonomous Illegal Mining Detection System<br/>
-           <span style="color:rgba(255,255,255,0.4)">Jharkhand, India</span></p>
-        {'<span class="badge ok">Pipeline loaded — ' + str(det_count) + ' detections</span>'
-          if loaded else
-         '<span class="badge warn">No pipeline result loaded</span>'}
-        <p style="margin-top:24px">Run the pipeline first:<br/>
-           <code>python scripts/demo.py --synthetic</code></p>
-        <p>Then visit: <a href="/map">/map</a> &nbsp;|&nbsp;
-           <a href="/api/stats">/api/stats</a> &nbsp;|&nbsp;
-           <a href="/docs">/docs</a></p>
-        <p style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:8px">
-           Run ID: {run_id}</p>
-      </div>
-    </body>
-    </html>
-    """)
+    
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "pipeline_loaded": loaded,
+            "run_id": run_id
+        }
+    )
 
 
 @app.get("/map", response_class=HTMLResponse, include_in_schema=False)
