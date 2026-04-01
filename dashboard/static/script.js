@@ -370,7 +370,7 @@ function buildReportsPanel() {
 
 function loadReportsData() {
   /* Try real API first */
-  fetch(`${API_BASE}/api/mining/map`)
+  fetch(`${API_BASE}/api/mining/map?aoi=${currentAoi}`)
     .then(r => r.json())
     .then(data => {
       const features = data.geojson && data.geojson.features || [];
