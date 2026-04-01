@@ -340,6 +340,8 @@ body {
     display: flex;
     flex-direction: column;
     background: #05090f;
+    /* ✅ FIX: allow flex children to shrink below their natural size */
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -478,9 +480,11 @@ input[type="range"]::-webkit-slider-thumb {
     background: rgba(240, 165, 0, 0.3);
 }
 
+/* ✅ FIX: use flex:1 instead of height:100% so Leaflet gets a real pixel height */
 #map {
     width: 100%;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .leaflet-container {
