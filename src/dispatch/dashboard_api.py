@@ -59,7 +59,7 @@ app.include_router(mining_router, prefix="/api/mining")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -315,29 +315,23 @@ async def get_leases(region: str = "jharkhand"):
 
 @app.get("/api/temporal/periods")
 async def get_temporal_periods():
-    """
-    Returns all available time periods with cached NDVI data.
-    Fetches from Planetary Computer if not cached.
-    """
-    from src.ingest.temporal_fetch import fetch_all_periods, DEFAULT_PERIODS
-    results = fetch_all_periods(DEFAULT_PERIODS)
-    
-    return {
-        "periods": [
-            {
-                "index": i,
-                "label": r["label"],
-                "start": r["start"],
-                "end": r["end"],
-                "scene_date": r.get("scene_date"),
-                "ndvi_mean": r.get("ndvi_mean"),
-                "status": r["status"]
-            }
-            for i, r in enumerate(results)
-        ],
-        "total": len(results),
-        "aoi_bounds": [85.8, 23.5, 86.2, 23.8] # [min_lon, min_lat, max_lon, max_lat]
-    }
+    """Returns cached periods only — does NOT re-fetch from Planetary Computer."""
+    from src.ingest.temporal_fetch import DEFAULT_PERIODS
+    import numpy as np
+    cache_dir = Path("data/temporal")
+    results = []
+    for i, (start, end, label) in enumerate(DEFAULT_PERIODS):
+        cache_file = cache_dir / f"{label.replace(' ', '_')}.npz"
+        if cache_file.exists():
+            try:
+                data = np.load(cache_file, allow_pickle=True)
+                r = dict(data["result"].item())
+                results.append({"index":i,"label":r["label"],"start":r["start"],"end":r["end"],"scene_date":r.get("scene_date"),"ndvi_mean":r.get("ndvi_mean"),"status":r["status"]})
+            except:
+                results.append({"index":i,"label":label,"start":start,"end":end,"status":"error"})
+        else:
+            results.append({"index":i,"label":label,"start":start,"end":end,"status":"not_cached"})
+    return {"periods":results,"total":len([r for r in results if r["status"]=="ok"]),"aoi_bounds":[85.8,23.5,86.2,23.8]}
 
 
 @app.get("/api/temporal/frame/{index}")
