@@ -6,15 +6,19 @@ Run with:
     uvicorn src.dispatch.dashboard_api:app --reload --port 5000
 
 Endpoints:
-    GET /                    → Latest dashboard HTML (or status page)
-    GET /map                 → Live Folium map HTML
-    GET /api/health          → Health check JSON
-    GET /api/detections      → GeoJSON FeatureCollection
-    GET /api/verifications   → Verification results JSON
-    GET /api/alerts          → All alert records JSON
-    GET /api/alerts/illegal  → Illegal-only alerts JSON
-    GET /api/stats           → Summary stats JSON
-    GET /api/leases          → Lease boundaries GeoJSON
+    GET  /                          → Latest dashboard HTML (or status page)
+    GET  /map                       → Live Folium map HTML
+    GET  /api/health                → Health check JSON
+    GET  /api/detections            → GeoJSON FeatureCollection
+    GET  /api/verifications         → Verification results JSON
+    GET  /api/alerts                → All alert records JSON
+    GET  /api/alerts/illegal        → Illegal-only alerts JSON
+    GET  /api/stats                 → Summary stats JSON
+    GET  /api/leases                → Lease boundaries GeoJSON
+    GET  /api/temporal/periods      → Temporal period metadata
+    GET  /api/temporal/frame/{idx}  → Single temporal frame (PNG overlays)
+    POST /api/colab/ingest          → Upload Colab .npz arrays → powers map overlays
+    GET  /api/colab/status          → Check whether Colab data is loaded
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -53,9 +57,11 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# ── Routers ────────────────────────────────────────────────────────────────
 from src.dispatch.mining_endpoints import router as mining_router
 app.include_router(mining_router, prefix="/api/mining")
 
+# ── CORS ───────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -63,9 +69,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static and templates
+# ── Static files & templates ───────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory="dashboard/static"), name="static")
 templates = Jinja2Templates(directory="dashboard/templates")
+
 
 # ---------------------------------------------------------------------------
 # In-memory pipeline result store
@@ -161,28 +168,23 @@ def _alert_dict(a: AlertRecord) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Routes
+# Routes — HTML pages
 # ---------------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """Serve the amazing 3D ISRO-style dashboard."""
+    """Serve the main dashboard."""
     loaded = _pipeline_result is not None
     run_id = _pipeline_result.run_id if _pipeline_result else "None"
-    
     return templates.TemplateResponse(
         "index.html",
-        {
-            "request": request,
-            "pipeline_loaded": loaded,
-            "run_id": run_id
-        }
+        {"request": request, "pipeline_loaded": loaded, "run_id": run_id},
     )
 
 
 @app.get("/openmine", response_class=HTMLResponse, include_in_schema=False)
 async def openmine_dashboard():
-    """Serve the OpenMine Watch public-facing dashboard."""
+    """Serve the OpenMine public-facing dashboard."""
     content = Path("dashboard/static/openmine.html").read_text(encoding="utf-8")
     return HTMLResponse(content=content)
 
@@ -193,16 +195,25 @@ async def live_map():
     latest = Path("results/demo/latest.html")
     if latest.exists():
         return HTMLResponse(content=latest.read_text(encoding="utf-8"))
-    return HTMLResponse(content="<p>No map generated yet. Run demo.py --synthetic first.</p>", status_code=503)
+    return HTMLResponse(
+        content="<p>No map generated yet. Run demo.py --synthetic first.</p>",
+        status_code=503,
+    )
 
+
+# ---------------------------------------------------------------------------
+# Routes — Core API
+# ---------------------------------------------------------------------------
 
 @app.get("/api/health")
 async def health():
+    from src.dispatch.colab_bridge import is_loaded as colab_loaded
     return {
-        "status": "ok",
-        "pipeline_loaded": _pipeline_result is not None,
-        "run_id": _pipeline_result.run_id if _pipeline_result else None,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "status":           "ok",
+        "pipeline_loaded":  _pipeline_result is not None,
+        "colab_loaded":     colab_loaded(),
+        "run_id":           _pipeline_result.run_id if _pipeline_result else None,
+        "timestamp":        datetime.utcnow().isoformat() + "Z",
     }
 
 
@@ -217,7 +228,10 @@ async def get_detections():
             features.append({
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [row["lon"], row["lat"]]},
-                "properties": {k: str(v) if isinstance(v, datetime) else v for k, v in row.items()},
+                "properties": {
+                    k: str(v) if isinstance(v, datetime) else v
+                    for k, v in row.items()
+                },
             })
     elif _pipeline_result:
         for d in _pipeline_result.detections:
@@ -235,7 +249,7 @@ async def get_verifications():
     if not _pipeline_result or not _pipeline_result.verifications:
         return {"count": 0, "results": []}
     return {
-        "count": len(_pipeline_result.verifications),
+        "count":   len(_pipeline_result.verifications),
         "results": [_ver_dict(v) for v in _pipeline_result.verifications],
     }
 
@@ -245,7 +259,7 @@ async def get_alerts():
     if not _pipeline_result or not _pipeline_result.alerts:
         return {"count": 0, "alerts": []}
     return {
-        "count": len(_pipeline_result.alerts),
+        "count":  len(_pipeline_result.alerts),
         "alerts": [_alert_dict(a) for a in _pipeline_result.alerts],
     }
 
@@ -266,13 +280,13 @@ async def get_illegal_alerts():
 async def get_stats():
     if not _pipeline_result:
         return {
-            "run_id": None,
-            "synthetic_mode": False,
+            "run_id":           None,
+            "synthetic_mode":   False,
             "total_detections": 0,
-            "illegal_count": 0,
-            "legal_count": 0,
-            "total_area_ha": 0.0,
-            "by_risk_level": {lvl.value: 0 for lvl in RiskLevel},
+            "illegal_count":    0,
+            "legal_count":      0,
+            "total_area_ha":    0.0,
+            "by_risk_level":    {lvl.value: 0 for lvl in RiskLevel},
             "alert_dispatched": 0,
         }
 
@@ -285,7 +299,8 @@ async def get_stats():
 
     dispatched = sum(
         1 for a in r.alerts
-        if a.whatsapp_status == AlertStatus.DISPATCHED or a.sms_status == AlertStatus.DISPATCHED
+        if a.whatsapp_status == AlertStatus.DISPATCHED
+        or a.sms_status == AlertStatus.DISPATCHED
     )
 
     return {
@@ -309,51 +324,250 @@ async def get_leases(region: str = "jharkhand"):
     if not lease_path.exists():
         lease_path = Path("config/lease_boundaries/india_coal_belt.geojson")
     if not lease_path.exists():
-        return JSONResponse({"type":"FeatureCollection","features":[]}, status_code=404)
+        return JSONResponse(
+            {"type": "FeatureCollection", "features": []},
+            status_code=404,
+        )
     return json.loads(lease_path.read_text())
 
 
+# ---------------------------------------------------------------------------
+# Routes — Temporal (reads from colab_bridge when loaded, else disk cache)
+# ---------------------------------------------------------------------------
+
 @app.get("/api/temporal/periods")
 async def get_temporal_periods():
-    """Returns cached periods only — does NOT re-fetch from Planetary Computer."""
-    from src.ingest.temporal_fetch import DEFAULT_PERIODS
-    import numpy as np
-    cache_dir = Path("data/temporal")
-    results = []
-    for i, (start, end, label) in enumerate(DEFAULT_PERIODS):
-        cache_file = cache_dir / f"{label.replace(' ', '_')}.npz"
-        if cache_file.exists():
-            try:
-                data = np.load(cache_file, allow_pickle=True)
-                r = dict(data["result"].item())
-                results.append({"index":i,"label":r["label"],"start":r["start"],"end":r["end"],"scene_date":r.get("scene_date"),"ndvi_mean":r.get("ndvi_mean"),"status":r["status"]})
-            except:
-                results.append({"index":i,"label":label,"start":start,"end":end,"status":"error"})
-        else:
-            results.append({"index":i,"label":label,"start":start,"end":end,"status":"not_cached"})
-    return {"periods":results,"total":len([r for r in results if r["status"]=="ok"]),"aoi_bounds":[85.8,23.5,86.2,23.8]}
+    """
+    Returns period metadata for the frontend time-slider.
+
+    Priority:
+      1. Colab-ingested temporal_dates + temporal_scores
+      2. Cached .npz files on disk (original behaviour)
+      3. 12-quarter synthetic fallback
+    """
+    from src.dispatch.colab_bridge import (
+        get_temporal_periods as colab_periods,
+        is_loaded,
+    )
+
+    if is_loaded():
+        periods = colab_periods()
+        return {
+            "periods": periods,
+            "total":   len([p for p in periods if p.get("status") == "ok"]),
+            "aoi_bounds": [85.8, 23.5, 86.2, 23.8],
+            "source": "colab_ingest",
+        }
+
+    # Original disk-cache path
+    try:
+        from src.ingest.temporal_fetch import DEFAULT_PERIODS
+        import numpy as np
+        cache_dir = Path("data/temporal")
+        results = []
+        for i, (start, end, label) in enumerate(DEFAULT_PERIODS):
+            cache_file = cache_dir / f"{label.replace(' ', '_')}.npz"
+            if cache_file.exists():
+                try:
+                    data = np.load(cache_file, allow_pickle=True)
+                    r = dict(data["result"].item())
+                    results.append({
+                        "index": i, "label": r["label"],
+                        "start": r["start"], "end": r["end"],
+                        "scene_date": r.get("scene_date"),
+                        "ndvi_mean":  r.get("ndvi_mean"),
+                        "status":     r["status"],
+                    })
+                except Exception:
+                    results.append({"index": i, "label": label,
+                                    "start": start, "end": end, "status": "error"})
+            else:
+                results.append({"index": i, "label": label,
+                                 "start": start, "end": end, "status": "not_cached"})
+        return {
+            "periods":   results,
+            "total":     len([r for r in results if r["status"] == "ok"]),
+            "aoi_bounds": [85.8, 23.5, 86.2, 23.8],
+            "source":    "disk_cache",
+        }
+    except ImportError:
+        # Colab bridge synthetic fallback
+        from src.dispatch.colab_bridge import get_temporal_periods as colab_periods
+        periods = colab_periods()
+        return {
+            "periods":    periods,
+            "total":      len(periods),
+            "aoi_bounds": [85.8, 23.5, 86.2, 23.8],
+            "source":     "synthetic",
+        }
 
 
 @app.get("/api/temporal/frame/{index}")
 async def get_temporal_frame(index: int):
-    from src.ingest.temporal_fetch import fetch_ndvi_composite, DEFAULT_PERIODS
-    if index < 0 or index >= len(DEFAULT_PERIODS):
-        return {"error": "Index out of range"}
-    start, end, label = DEFAULT_PERIODS[index]
-    result = fetch_ndvi_composite(start, end, label)
+    """
+    Return a single temporal frame with PNG overlays + metadata.
+
+    Priority:
+      1. Colab-ingested arrays  → renders in colab_bridge.py
+      2. Original disk-cache fetch → src/ingest/temporal_fetch.py
+    """
+    from src.dispatch.colab_bridge import (
+        get_temporal_frame as colab_frame,
+        is_loaded,
+    )
+
+    if is_loaded():
+        frame = colab_frame(index)
+        return {
+            "index":           frame.get("index", index),
+            "label":           frame.get("label"),
+            "scene_date":      frame.get("scene_date"),
+            "ndvi_png_b64":    frame.get("ndvi_png_b64"),
+            "bsi_png_b64":     frame.get("bsi_png_b64"),
+            "ndwi_png_b64":    frame.get("ndwi_png_b64"),
+            "turbidity_png_b64": frame.get("turbidity_png_b64"),
+            "mining_png_b64":  frame.get("mining_png_b64"),
+            "rgb_png_b64":     frame.get("rgb_png_b64"),
+            "ndvi_mean":       frame.get("ndvi_mean"),
+            "bsi_mean":        frame.get("bsi_mean"),
+            "mining_mean":     frame.get("mining_mean"),
+            "status":          frame.get("status", "ok"),
+            "source":          "colab_ingest",
+        }
+
+    # Original path
+    try:
+        from src.ingest.temporal_fetch import fetch_ndvi_composite, DEFAULT_PERIODS
+        if index < 0 or index >= len(DEFAULT_PERIODS):
+            return {"error": "Index out of range"}
+        start, end, label = DEFAULT_PERIODS[index]
+        result = fetch_ndvi_composite(start, end, label)
+        return {
+            "index":           index,
+            "label":           result["label"],
+            "scene_date":      result.get("scene_date"),
+            "ndvi_png_b64":    result.get("ndvi_png_b64"),
+            "bsi_png_b64":     result.get("bsi_png_b64"),
+            "ndwi_png_b64":    result.get("ndwi_png_b64"),
+            "turbidity_png_b64": result.get("turbidity_png_b64"),
+            "mining_png_b64":  result.get("mining_png_b64"),
+            "rgb_png_b64":     result.get("rgb_png_b64"),
+            "ndvi_mean":       result.get("ndvi_mean"),
+            "bsi_mean":        result.get("bsi_mean"),
+            "mining_mean":     result.get("mining_mean"),
+            "cloud_cover":     result.get("cloud_cover"),
+            "status":          result["status"],
+            "error":           result.get("error"),
+            "source":          "sentinel2",
+        }
+    except ImportError:
+        from src.dispatch.colab_bridge import get_temporal_frame as colab_frame
+        return colab_frame(index)
+
+
+# ---------------------------------------------------------------------------
+# Routes — Colab ingest
+# ---------------------------------------------------------------------------
+
+@app.post("/api/colab/ingest")
+async def colab_ingest(file: UploadFile = File(...)):
+    """
+    Upload a .npz file exported from the Colab notebook.
+
+    Expected arrays (include whichever are available):
+        ndvi_a, ndvi_b          — NDVI after/before (h × w float32)
+        bsi_a,  bsi_b           — Bare Soil Index after/before
+        ndwi_a, ndwi_b          — NDWI after/before
+        nbr_a,  nbr_b           — NBR after/before
+        mining_score            — 4-index fused probability map
+        mining_score_v2         — 6-index fused probability map (preferred)
+        temporal_dates          — 1-D string array  e.g. ["2019", "2020", …]
+        temporal_scores         — 1-D float array of mean mining scores
+        labels_a, labels_b      — K-Means cluster label arrays
+        affected_area_ha        — scalar float
+        critical_area_ha        — scalar float
+        peak_score              — scalar float
+
+    Usage from Colab:
+        import numpy as np, requests
+
+        np.savez_compressed("/tmp/openmine_payload.npz",
+            ndvi_a=ndvi_a, ndvi_b=ndvi_b,
+            bsi_a=bsi_a, bsi_b=bsi_b,
+            ndwi_a=ndwi_a, ndwi_b=ndwi_b,
+            nbr_a=nbr_a, nbr_b=nbr_b,
+            mining_score=mining_score,
+            mining_score_v2=mining_score_v2,
+            temporal_dates=np.array([str(d.year) for d in dates]),
+            temporal_scores=np.array(scores),
+            affected_area_ha=affected_area,
+            critical_area_ha=critical,
+            peak_score=float(mining_score_v2.max()),
+        )
+
+        with open("/tmp/openmine_payload.npz", "rb") as f:
+            r = requests.post(
+                "https://web-production-f8923.up.railway.app/api/colab/ingest",
+                files={"file": ("payload.npz", f, "application/octet-stream")},
+            )
+        print(r.json())
+    """
+    if not file.filename.endswith(".npz"):
+        return JSONResponse(
+            {"error": "Only .npz files accepted. Use np.savez_compressed()."},
+            status_code=400,
+        )
+
+    try:
+        raw = await file.read()
+    except Exception as exc:
+        return JSONResponse({"error": f"Failed to read upload: {exc}"}, status_code=400)
+
+    from src.dispatch.colab_bridge import ingest_npz
+    try:
+        summary = ingest_npz(raw)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=422)
+
+    logger.success(
+        "Colab ingest complete | keys={} | shape={}",
+        summary["loaded_keys"],
+        summary["shape"],
+    )
+
     return {
-        "index": index, "label": result["label"],
-        "scene_date": result.get("scene_date"),
-        "ndvi_png_b64": result.get("ndvi_png_b64"),
-        "bsi_png_b64": result.get("bsi_png_b64"),
-        "ndwi_png_b64": result.get("ndwi_png_b64"),
-        "turbidity_png_b64": result.get("turbidity_png_b64"),
-        "mining_png_b64": result.get("mining_png_b64"),
-        "rgb_png_b64": result.get("rgb_png_b64"),
-        "ndvi_mean": result.get("ndvi_mean"),
-        "bsi_mean": result.get("bsi_mean"),
-        "mining_mean": result.get("mining_mean"),
-        "status": result["status"], "error": result.get("error"),
+        "status":      "ok",
+        "loaded_keys": summary["loaded_keys"],
+        "shape":       summary["shape"],
+        "message":     (
+            f"Successfully ingested {len(summary['loaded_keys'])} arrays. "
+            "Map overlays, hotspots, and stats are now live."
+        ),
     }
+
+
+@app.get("/api/colab/status")
+async def colab_status():
+    """Check whether Colab data is loaded and what's available."""
+    from src.dispatch.colab_bridge import get_store, is_loaded
+    store = get_store()
+    available = [k for k, v in store.items() if v is not None and k != "loaded"]
+    shape = None
+    for k in ("mining_score_v2", "mining_score", "ndvi_a"):
+        if store.get(k) is not None:
+            import numpy as np
+            arr = store[k]
+            if hasattr(arr, "shape"):
+                shape = list(arr.shape)
+            break
+    return {
+        "loaded":          is_loaded(),
+        "available_keys":  available,
+        "array_shape":     shape,
+        "aoi_bounds":      store["aoi_bounds"],
+        "affected_area_ha": store.get("affected_area_ha"),
+        "peak_score":      store.get("peak_score"),
+    }
+
 
 __all__ = ["app", "set_pipeline_result", "get_pipeline_result"]
