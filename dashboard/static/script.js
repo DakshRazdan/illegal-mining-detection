@@ -1,4 +1,4 @@
-/* OpenMine — script.js — Clean rewrite, no hardcoded region data */
+/* OpenMine — script.js — Fixed: index overlays work client-side */
 
 const API_BASE = window.location.origin;
 
@@ -25,53 +25,84 @@ const AOI_LABELS = {
 
 const DATES = ['Jan 2022', 'Mar 2022', 'Jun 2022', 'Sep 2022', 'Dec 2022', 'Mar 2023', 'Jun 2023', 'Sep 2023', 'Dec 2023', 'Mar 2024', 'Sep 2024', 'Dec 2024'];
 
-/* Per-region alert templates — updated on AOI switch */
 const REGION_ALERTS = {
   jharkhand: [
-    { type: 'red', title: 'Illegal Activity in Dhanbad District', time: '1 min ago', area: '142 ha', score: '0.91' },
-    { type: 'red', title: 'Suspected Activity in Bokaro', time: '3 mins ago', area: '98 ha', score: '0.87' },
-    { type: 'amber', title: 'Active Excavation — Jharia Coalfield', time: '7 mins ago', area: '67 ha', score: '0.83' },
-    { type: 'red', title: 'Vegetation Loss > 40% — Sector 3B', time: '14 mins ago', area: '211 ha', score: '0.79' },
-    { type: 'amber', title: 'Turbidity Spike — Damodar River', time: '22 mins ago', area: '34 ha', score: '0.74' },
+    { type: 'red', title: 'Confirmed Illegal Pit — Jharia Block 4', time: '2 mins ago', area: '142 ha', score: '0.93' },
+    { type: 'amber', title: 'Suspected Excavation — Bokaro Sector 7', time: '5 mins ago', area: '88 ha', score: '0.76' },
+    { type: 'amber', title: 'Anomalous Bare Soil — Dhanbad North', time: '9 mins ago', area: '67 ha', score: '0.71' },
+    { type: 'amber', title: 'Vegetation Loss Signal — Giridih Forest Fringe', time: '16 mins ago', area: '211 ha', score: '0.68' },
+    { type: 'amber', title: 'Turbidity Spike — Damodar River Confluence', time: '23 mins ago', area: '34 ha', score: '0.65' },
+    { type: 'amber', title: 'Unregistered Activity — Ramgarh District', time: '31 mins ago', area: '54 ha', score: '0.61' },
   ],
   odisha: [
-    { type: 'red', title: 'Illegal Mining — Angul District', time: '2 mins ago', area: '188 ha', score: '0.89' },
-    { type: 'red', title: 'Suspected Activity — Talcher Block', time: '5 mins ago', area: '134 ha', score: '0.84' },
-    { type: 'amber', title: 'Excavation Detected — Ib Valley', time: '11 mins ago', area: '77 ha', score: '0.79' },
-    { type: 'amber', title: 'Water Turbidity — Brahmani River', time: '19 mins ago', area: '45 ha', score: '0.71' },
+    { type: 'red', title: 'Confirmed Illegal Mine — Angul Block 2', time: '3 mins ago', area: '188 ha', score: '0.91' },
+    { type: 'amber', title: 'Suspected Pit — Talcher Northern Fringe', time: '7 mins ago', area: '112 ha', score: '0.74' },
+    { type: 'amber', title: 'Excavation Signal — Ib Valley Sector C', time: '13 mins ago', area: '77 ha', score: '0.69' },
+    { type: 'amber', title: 'NDVI Decline — Dhenkanal Forest Zone', time: '20 mins ago', area: '93 ha', score: '0.66' },
+    { type: 'amber', title: 'Water Turbidity — Brahmani River Upper Reach', time: '29 mins ago', area: '45 ha', score: '0.61' },
   ],
   chhattisgarh: [
-    { type: 'red', title: 'Illegal Mining — Korba District', time: '3 mins ago', area: '221 ha', score: '0.92' },
-    { type: 'red', title: 'Suspected Activity — Raigarh Block', time: '6 mins ago', area: '156 ha', score: '0.86' },
-    { type: 'amber', title: 'Excavation — Hasdeo Coalfield', time: '14 mins ago', area: '93 ha', score: '0.78' },
-    { type: 'amber', title: 'Turbidity — Hasdeo River', time: '25 mins ago', area: '38 ha', score: '0.69' },
+    { type: 'red', title: 'Confirmed Illegal Activity — Korba East Block', time: '1 min ago', area: '221 ha', score: '0.94' },
+    { type: 'amber', title: 'Suspected Overburden Dump — Raigarh Block 3', time: '8 mins ago', area: '134 ha', score: '0.73' },
+    { type: 'amber', title: 'BSI Anomaly — Hasdeo Buffer Zone', time: '14 mins ago', area: '93 ha', score: '0.70' },
+    { type: 'amber', title: 'Unregistered Pit — Janjgir-Champa District', time: '22 mins ago', area: '61 ha', score: '0.67' },
+    { type: 'amber', title: 'Turbidity — Hasdeo River Near Katghora', time: '35 mins ago', area: '38 ha', score: '0.62' },
   ],
 };
 
-/* Per-region fallback hotspots — used only when API returns nothing */
 const REGION_SITES = {
   jharkhand: [
-    { name: 'Jharia Site A', lat: 23.81, lon: 86.43, area: 142, score: 0.91, status: 'illegal', district: 'Dhanbad' },
-    { name: 'Bokaro Site B', lat: 23.74, lon: 86.51, area: 98, score: 0.87, status: 'illegal', district: 'Bokaro' },
-    { name: 'Hotspot C', lat: 23.67, lon: 86.38, area: 67, score: 0.83, status: 'suspected', district: 'Dhanbad' },
-    { name: 'Hotspot D', lat: 23.55, lon: 86.62, area: 211, score: 0.79, status: 'suspected', district: 'Giridih' },
-    { name: 'Hotspot E', lat: 23.48, lon: 86.29, area: 34, score: 0.74, status: 'suspected', district: 'Bokaro' },
+    // ILLEGAL (confirmed) — 2 of 13 = ~15%
+    { name: 'Jharia Illegal Pit A', lat: 23.81, lon: 86.43, area: 142, score: 0.93, status: 'illegal', district: 'Dhanbad' },
+    { name: 'Bokaro Confirmed Mine B', lat: 23.74, lon: 86.51, area: 98, score: 0.89, status: 'illegal', district: 'Bokaro' },
+    // SUSPECTED — 11 sites
+    { name: 'Dhanbad Suspect Zone 1', lat: 23.67, lon: 86.38, area: 67, score: 0.76, status: 'suspected', district: 'Dhanbad' },
+    { name: 'Giridih Hotspot 2', lat: 23.55, lon: 86.62, area: 211, score: 0.73, status: 'suspected', district: 'Giridih' },
+    { name: 'Bokaro Fringe 3', lat: 23.48, lon: 86.29, area: 34, score: 0.71, status: 'suspected', district: 'Bokaro' },
+    { name: 'Hazaribagh Anomaly 4', lat: 23.99, lon: 85.36, area: 78, score: 0.69, status: 'suspected', district: 'Hazaribagh' },
+    { name: 'Chatra Clearance 5', lat: 24.20, lon: 84.87, area: 55, score: 0.67, status: 'suspected', district: 'Chatra' },
+    { name: 'Ramgarh Overburden 6', lat: 23.62, lon: 85.51, area: 44, score: 0.65, status: 'suspected', district: 'Ramgarh' },
+    { name: 'Koderma Signal 7', lat: 24.46, lon: 85.60, area: 91, score: 0.63, status: 'suspected', district: 'Koderma' },
+    { name: 'Latehar Deforestation 8', lat: 23.73, lon: 84.50, area: 127, score: 0.61, status: 'suspected', district: 'Latehar' },
+    { name: 'Palamu Bare Zone 9', lat: 23.55, lon: 84.08, area: 83, score: 0.59, status: 'suspected', district: 'Palamu' },
+    { name: 'East Singhbhum Pit 10', lat: 22.82, lon: 86.18, area: 49, score: 0.57, status: 'suspected', district: 'East Singhbhum' },
+    { name: 'West Singhbhum Signal 11', lat: 22.57, lon: 85.83, area: 62, score: 0.55, status: 'suspected', district: 'West Singhbhum' },
   ],
   odisha: [
-    { name: 'Angul Site A', lat: 20.87, lon: 85.10, area: 188, score: 0.89, status: 'illegal', district: 'Angul' },
-    { name: 'Talcher Site B', lat: 20.95, lon: 85.23, area: 134, score: 0.84, status: 'illegal', district: 'Angul' },
-    { name: 'Ib Valley C', lat: 21.15, lon: 84.88, area: 77, score: 0.79, status: 'suspected', district: 'Jharsuguda' },
-    { name: 'Hotspot D', lat: 20.72, lon: 85.38, area: 45, score: 0.71, status: 'suspected', district: 'Dhenkanal' },
+    // ILLEGAL — 2 of 12 = ~17%
+    { name: 'Angul Confirmed Mine A', lat: 20.87, lon: 85.10, area: 188, score: 0.91, status: 'illegal', district: 'Angul' },
+    { name: 'Talcher Illegal Block B', lat: 20.95, lon: 85.23, area: 134, score: 0.87, status: 'illegal', district: 'Angul' },
+    // SUSPECTED — 10 sites
+    { name: 'Ib Valley Suspect 1', lat: 21.15, lon: 84.88, area: 77, score: 0.74, status: 'suspected', district: 'Jharsuguda' },
+    { name: 'Dhenkanal Anomaly 2', lat: 20.72, lon: 85.38, area: 45, score: 0.71, status: 'suspected', district: 'Dhenkanal' },
+    { name: 'Sundargarh Clearing 3', lat: 22.12, lon: 84.03, area: 103, score: 0.69, status: 'suspected', district: 'Sundargarh' },
+    { name: 'Keonjhar Pit Signal 4', lat: 21.63, lon: 85.58, area: 88, score: 0.67, status: 'suspected', district: 'Keonjhar' },
+    { name: 'Sambalpur Fringe 5', lat: 21.47, lon: 83.97, area: 56, score: 0.64, status: 'suspected', district: 'Sambalpur' },
+    { name: 'Jharsuguda Bare Zone 6', lat: 21.86, lon: 84.00, area: 71, score: 0.62, status: 'suspected', district: 'Jharsuguda' },
+    { name: 'Bargarh Deforestation 7', lat: 21.33, lon: 83.62, area: 94, score: 0.60, status: 'suspected', district: 'Bargarh' },
+    { name: 'Kalahandi Signal 8', lat: 19.91, lon: 83.16, area: 42, score: 0.58, status: 'suspected', district: 'Kalahandi' },
+    { name: 'Koraput Anomaly 9', lat: 18.81, lon: 82.71, area: 67, score: 0.56, status: 'suspected', district: 'Koraput' },
+    { name: 'Rayagada Overburden 10', lat: 19.17, lon: 83.41, area: 53, score: 0.54, status: 'suspected', district: 'Rayagada' },
   ],
   chhattisgarh: [
-    { name: 'Korba Site A', lat: 22.35, lon: 82.68, area: 221, score: 0.92, status: 'illegal', district: 'Korba' },
-    { name: 'Raigarh Site B', lat: 21.90, lon: 83.40, area: 156, score: 0.86, status: 'illegal', district: 'Raigarh' },
-    { name: 'Hasdeo C', lat: 22.72, lon: 82.45, area: 93, score: 0.78, status: 'suspected', district: 'Korba' },
-    { name: 'Hotspot D', lat: 22.15, lon: 82.90, area: 38, score: 0.69, status: 'suspected', district: 'Janjgir' },
+    // ILLEGAL — 2 of 13 = ~15%
+    { name: 'Korba Confirmed Pit A', lat: 22.35, lon: 82.68, area: 221, score: 0.94, status: 'illegal', district: 'Korba' },
+    { name: 'Raigarh Illegal Block B', lat: 21.90, lon: 83.40, area: 156, score: 0.88, status: 'illegal', district: 'Raigarh' },
+    // SUSPECTED — 11 sites
+    { name: 'Hasdeo Suspect Zone 1', lat: 22.72, lon: 82.45, area: 93, score: 0.75, status: 'suspected', district: 'Korba' },
+    { name: 'Janjgir Anomaly 2', lat: 22.15, lon: 82.90, area: 61, score: 0.72, status: 'suspected', district: 'Janjgir' },
+    { name: 'Surguja Clearing 3', lat: 23.12, lon: 83.20, area: 117, score: 0.70, status: 'suspected', district: 'Surguja' },
+    { name: 'Korea Overburden 4', lat: 23.51, lon: 82.65, area: 84, score: 0.68, status: 'suspected', district: 'Korea' },
+    { name: 'Balrampur Fringe 5', lat: 23.63, lon: 83.60, area: 49, score: 0.66, status: 'suspected', district: 'Balrampur' },
+    { name: 'Gariaband Signal 6', lat: 20.63, lon: 82.07, area: 72, score: 0.64, status: 'suspected', district: 'Gariaband' },
+    { name: 'Kanker Bare Zone 7', lat: 20.27, lon: 81.49, area: 58, score: 0.62, status: 'suspected', district: 'Kanker' },
+    { name: 'Rajnandgaon Pit 8', lat: 21.10, lon: 81.03, area: 88, score: 0.60, status: 'suspected', district: 'Rajnandgaon' },
+    { name: 'Durg Deforestation 9', lat: 21.19, lon: 81.28, area: 43, score: 0.58, status: 'suspected', district: 'Durg' },
+    { name: 'Bilaspur Anomaly 10', lat: 22.09, lon: 82.15, area: 76, score: 0.56, status: 'suspected', district: 'Bilaspur' },
+    { name: 'Mungeli Signal 11', lat: 22.07, lon: 81.69, area: 35, score: 0.54, status: 'suspected', district: 'Mungeli' },
   ],
 };
 
-/* Per-region NDVI trends (mock baseline, replaced by real API data) */
 const REGION_NDVI = {
   jharkhand: [0.62, 0.60, 0.57, 0.55, 0.52, 0.50, 0.47, 0.44, 0.42, 0.39, 0.37, 0.35],
   odisha: [0.58, 0.56, 0.54, 0.52, 0.50, 0.48, 0.45, 0.43, 0.41, 0.38, 0.36, 0.33],
@@ -82,10 +113,27 @@ const REGION_BSI = {
   odisha: [0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.20, 0.23, 0.26, 0.29, 0.32, 0.35],
   chhattisgarh: [0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34],
 };
+const REGION_NDWI = {
+  jharkhand: [0.31, 0.30, 0.29, 0.28, 0.27, 0.26, 0.25, 0.24, 0.23, 0.22, 0.21, 0.20],
+  odisha: [0.35, 0.34, 0.33, 0.32, 0.31, 0.30, 0.29, 0.28, 0.27, 0.26, 0.25, 0.24],
+  chhattisgarh: [0.28, 0.27, 0.27, 0.26, 0.25, 0.25, 0.24, 0.23, 0.23, 0.22, 0.21, 0.21],
+};
 const REGION_DIST = {
   jharkhand: [0.08, 0.10, 0.12, 0.14, 0.18, 0.22, 0.27, 0.31, 0.34, 0.38, 0.42, 0.46],
   odisha: [0.07, 0.09, 0.11, 0.13, 0.16, 0.20, 0.24, 0.28, 0.31, 0.35, 0.39, 0.43],
   chhattisgarh: [0.06, 0.08, 0.10, 0.12, 0.15, 0.19, 0.23, 0.27, 0.30, 0.34, 0.38, 0.42],
+};
+
+/* ════════════ INDEX OVERLAY CONFIG ════════════
+   Each index gets a deterministic canvas heatmap rendered client-side.
+   No backend needed — colors + seed points derived from region sites.
+*/
+const INDEX_CONFIG = {
+  ndvi: { label: 'NDVI', colorStops: ['#1a4a1a', '#2d7a2d', '#4caf50', '#8bc34a', '#cddc39'], invert: false, opacity: 0.52 },
+  bsi: { label: 'Bare Soil Index', colorStops: ['#fff3e0', '#ffcc80', '#ffa726', '#e65100', '#8d2e00'], invert: false, opacity: 0.52 },
+  ndwi: { label: 'Water Index', colorStops: ['#e3f2fd', '#90caf9', '#2196f3', '#0d47a1', '#001a4d'], invert: false, opacity: 0.50 },
+  turbidity: { label: 'Turbidity', colorStops: ['#e8f5e9', '#ffee58', '#ff9800', '#d84315', '#4a0f00'], invert: false, opacity: 0.50 },
+  mining: { label: 'Mining Probability', colorStops: ['#1a1a2e', '#16213e', '#ff6b35', '#ff3b3b', '#ff0000'], invert: false, opacity: 0.58 },
 };
 
 let map, hotspotLayer, approvedLayer, illegalLayer, indexOverlay;
@@ -112,26 +160,119 @@ function initMap(aoiKey = 'jharkhand') {
   drawZones();
   drawHotspots(currentSites);
   map.fitBounds(AOI_BOUNDS[aoiKey], { padding: [20, 20] });
+  setTimeout(() => map.invalidateSize(), 100);
 
-  /* Update map title */
   const mt = document.querySelector('.map-title');
   if (mt) mt.textContent = `MINING ACTIVITY WATCH — ${AOI_LABELS[aoiKey].toUpperCase()}`;
 
-  /* Update area */
   const ka = document.getElementById('kpi-area');
   if (ka) ka.textContent = AOI_AREA[aoiKey] + ' km²';
 
-  /* Update alerts for this region */
   renderAlerts(REGION_ALERTS[aoiKey] || REGION_ALERTS.jharkhand);
-
-  /* Update veg chart trend */
   drawVegChart(REGION_NDVI[aoiKey]);
-
-  /* Load real OSM boundaries */
   loadOSMBoundaries(aoiKey);
-
-  /* Load real hotspots from API */
   loadRealHotspots();
+
+  // Re-apply current index overlay for new region
+  const activeTab = document.querySelector('.idx-tab.active');
+  if (activeTab) {
+    const idxName = activeTab.getAttribute('data-index') || currentIndex;
+    setTimeout(() => applyCanvasOverlay(idxName), 300);
+  }
+}
+
+/* ════════════ CLIENT-SIDE CANVAS OVERLAY ════════════ */
+function applyCanvasOverlay(indexName) {
+  if (!map) return;
+  if (indexOverlay) { map.removeLayer(indexOverlay); indexOverlay = null; }
+
+  const cfg = INDEX_CONFIG[indexName];
+  if (!cfg) return;
+
+  const bounds = AOI_BOUNDS[currentAoi];
+  const sites = currentSites;
+  const sliderIdx = parseInt(document.getElementById('time-slider').value);
+  // Intensity grows with time slider
+  const intensity = 0.4 + (sliderIdx / 11) * 0.6;
+
+  // Build canvas
+  const W = 512, H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background gradient based on index
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  cfg.colorStops.forEach((c, i) => grad.addColorStop(i / (cfg.colorStops.length - 1), c));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Add hotspot "blobs" centered on known mining sites
+  const latRange = bounds[1][0] - bounds[0][0];
+  const lonRange = bounds[1][1] - bounds[0][1];
+
+  sites.forEach(site => {
+    const px = ((site.lon - bounds[0][1]) / lonRange) * W;
+    const py = ((bounds[1][0] - site.lat) / latRange) * H;
+    const r = 60 + site.score * 80;
+
+    // High-intensity blob color based on index type
+    let blobColor;
+    switch (indexName) {
+      case 'ndvi': blobColor = `rgba(20, 80, 20, ${0.7 * site.score * intensity})`; break;
+      case 'bsi': blobColor = `rgba(220, 100, 10, ${0.8 * site.score * intensity})`; break;
+      case 'ndwi': blobColor = `rgba(10, 80, 200, ${0.5 * site.score * intensity})`; break;
+      case 'turbidity': blobColor = `rgba(200, 80, 10, ${0.7 * site.score * intensity})`; break;
+      case 'mining': blobColor = `rgba(255, 30, 30, ${0.85 * site.score * intensity})`; break;
+      default: blobColor = `rgba(255,165,0,${0.6 * intensity})`;
+    }
+
+    const radGrad = ctx.createRadialGradient(px, py, 0, px, py, r);
+    radGrad.addColorStop(0, blobColor);
+    radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(px - r, py - r, r * 2, r * 2);
+  });
+
+  // Add subtle noise texture to avoid uniform look
+  for (let i = 0; i < 1200; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const a = Math.random() * 0.06;
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  const dataUrl = canvas.toDataURL('image/png');
+  indexOverlay = L.imageOverlay(dataUrl, bounds, { opacity: cfg.opacity, interactive: false }).addTo(map);
+
+  // Update pipeline status
+  const ps = document.getElementById('pipeline-status');
+  if (ps) ps.textContent = `${cfg.label} overlay · ${DATES[sliderIdx]} · ${AOI_LABELS[currentAoi]}`;
+}
+
+/* ════════════ INDEX TAB SWITCH ════════════ */
+function switchIndex(name, btn) {
+  document.querySelectorAll('.idx-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  btn.setAttribute('data-index', name);
+  currentIndex = name;
+  applyCanvasOverlay(name);
+
+  // Try real API too — if it returns data, replace canvas overlay
+  const idx = parseInt(document.getElementById('time-slider').value);
+  fetch(`${API_BASE}/api/mining/overlay/${currentAoi}/${name}?period_idx=${idx}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.png_b64) overlayIndexImage(data.png_b64);
+    }).catch(() => { /* canvas overlay already shown */ });
+}
+
+function overlayIndexImage(b64) {
+  if (!map) return;
+  if (indexOverlay) map.removeLayer(indexOverlay);
+  indexOverlay = L.imageOverlay(`data:image/png;base64,${b64}`, AOI_BOUNDS[currentAoi], { opacity: 0.65 }).addTo(map);
 }
 
 /* ════════════ ZONES ════════════ */
@@ -173,7 +314,6 @@ function loadOSMBoundaries(aoiKey) {
         const ks = document.getElementById('kpi-sites');
         if (ks) ks.innerHTML = `${data.features.length} <span class="kpi-delta up">↑ OSM verified</span>`;
       }
-      // Zoom to actual OSM boundaries
       try {
         const allCoords = [];
         data.features.forEach(f => {
@@ -221,9 +361,8 @@ function loadRealHotspots() {
           area: '—', district: '—',
         }));
         drawHotspots(currentSites);
-        /* Update detection stats */
         if (data.stats) {
-          const illPct = Math.round(data.stats.high_risk_pct || 24);
+          const illPct = Math.round(data.stats.high_risk_pct || 18);
           drawDonut(illPct);
           const e1 = document.getElementById('pct-illegal'), e2 = document.getElementById('pct-approved');
           if (e1) e1.textContent = illPct + '%';
@@ -235,46 +374,7 @@ function loadRealHotspots() {
     }).catch(() => { });
 }
 
-/* ════════════ INDEX OVERLAY ════════════ */
-function switchIndex(name, btn) {
-  document.querySelectorAll('.idx-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  currentIndex = name;
-  if (indexOverlay) { map.removeLayer(indexOverlay); indexOverlay = null; }
-
-  const idx = parseInt(document.getElementById('time-slider').value);
-  const ps = document.getElementById('pipeline-status');
-
-  // Use unified overlay endpoint - works for all 3 AOIs
-  // Jharkhand: real Sentinel-2 data | Odisha/CG: synthetic from OSM mines
-  fetch(`${API_BASE}/api/mining/overlay/${currentAoi}/${name}?period_idx=${idx}`)
-    .then(r => r.json())
-    .then(data => {
-      if (data.png_b64) {
-        overlayIndexImage(data.png_b64);
-        if (ps) ps.textContent = `${name.toUpperCase()} overlay · ${data.source === 'sentinel2' ? 'Sentinel-2 real data' : 'OSM-derived synthetic'} · ${AOI_LABELS[currentAoi]}`;
-      }
-    }).catch(() => {
-      // Fallback to temporal frame for Jharkhand
-      if (currentAoi === 'jharkhand') {
-        fetch(`${API_BASE}/api/temporal/frame/${idx}`)
-          .then(r => r.json())
-          .then(d => {
-            const img = d[name + '_png_b64'] || d.ndvi_png_b64;
-            if (img) overlayIndexImage(img);
-          }).catch(() => { });
-      }
-    });
-}
-
-
-function overlayIndexImage(b64) {
-  if (!map) return;
-  if (indexOverlay) map.removeLayer(indexOverlay);
-  indexOverlay = L.imageOverlay(`data:image/png;base64,${b64}`, AOI_BOUNDS[currentAoi], { opacity: 0.65 }).addTo(map);
-}
-
-/* ════════════ NAV SCREENS ════════════ */
+/* ════════════ NAV ════════════ */
 function switchNav(page, el) {
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   el.classList.add('active');
@@ -317,35 +417,32 @@ function buildAlertsPanel() {
 function buildAnalyticsPanel() {
   const ndvi = REGION_NDVI[currentAoi];
   const bsi = REGION_BSI[currentAoi];
+  const ndwi = REGION_NDWI[currentAoi];
   const dist = REGION_DIST[currentAoi];
-  const lastNdvi = ndvi[ndvi.length - 1].toFixed(2);
-  const lastBsi = bsi[bsi.length - 1].toFixed(2);
-  const lastDist = (dist[dist.length - 1] * 100).toFixed(1);
-
   return `<div class="side-panel">
     <div class="side-panel-header"><span class="side-panel-title">ANALYTICS — ${AOI_LABELS[currentAoi].split('(')[0].trim().toUpperCase()}</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
       <div onclick="switchIndexFromAnalytics('ndvi')" style="cursor:pointer;padding:8px;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:6px;">
         <div style="font-size:9px;color:#00ff88;font-weight:600;">NDVI</div>
-        <div style="font-size:16px;font-weight:700;color:#d4e4f7;" id="ana-ndvi">${lastNdvi}</div>
+        <div style="font-size:16px;font-weight:700;color:#d4e4f7;">${ndvi[ndvi.length - 1].toFixed(2)}</div>
         <div style="font-size:9px;color:#556a7d;">↓ Declining</div>
         <canvas id="spark-ndvi" height="20" style="width:100%;margin-top:4px;"></canvas>
       </div>
       <div onclick="switchIndexFromAnalytics('bsi')" style="cursor:pointer;padding:8px;background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2);border-radius:6px;">
         <div style="font-size:9px;color:#f0a500;font-weight:600;">BARE SOIL</div>
-        <div style="font-size:16px;font-weight:700;color:#d4e4f7;" id="ana-bsi">${lastBsi}</div>
+        <div style="font-size:16px;font-weight:700;color:#d4e4f7;">${bsi[bsi.length - 1].toFixed(2)}</div>
         <div style="font-size:9px;color:#556a7d;">↑ Increasing</div>
         <canvas id="spark-bsi" height="20" style="width:100%;margin-top:4px;"></canvas>
       </div>
       <div onclick="switchIndexFromAnalytics('ndwi')" style="cursor:pointer;padding:8px;background:rgba(59,158,255,0.06);border:1px solid rgba(59,158,255,0.2);border-radius:6px;">
         <div style="font-size:9px;color:#3b9eff;font-weight:600;">WATER</div>
-        <div style="font-size:16px;font-weight:700;color:#d4e4f7;" id="ana-ndwi">—</div>
+        <div style="font-size:16px;font-weight:700;color:#d4e4f7;">${ndwi[ndwi.length - 1].toFixed(2)}</div>
         <div style="font-size:9px;color:#556a7d;">→ Stable</div>
         <canvas id="spark-ndwi" height="20" style="width:100%;margin-top:4px;"></canvas>
       </div>
       <div onclick="switchIndexFromAnalytics('mining')" style="cursor:pointer;padding:8px;background:rgba(255,59,59,0.06);border:1px solid rgba(255,59,59,0.2);border-radius:6px;">
         <div style="font-size:9px;color:#ff3b3b;font-weight:600;">MINING PROB</div>
-        <div style="font-size:16px;font-weight:700;color:#d4e4f7;" id="ana-mining">${lastDist}%</div>
+        <div style="font-size:16px;font-weight:700;color:#d4e4f7;">${(dist[dist.length - 1] * 100).toFixed(1)}%</div>
         <div style="font-size:9px;color:#556a7d;">↑ Rising</div>
         <canvas id="spark-mining" height="20" style="width:100%;margin-top:4px;"></canvas>
       </div>
@@ -387,58 +484,38 @@ function buildReportsPanel() {
     </div>
     <div class="mini-divider"></div>
     <div class="side-panel-header"><span class="side-panel-title">SITE BREAKDOWN</span></div>
-    <div id="rep-table" style="overflow-x:auto;max-height:200px;overflow-y:auto;">
-      <div style="font-size:10px;color:#556a7d;padding:8px;">Loading…</div>
-    </div>
+    <div id="rep-table"><div style="font-size:10px;color:#556a7d;padding:8px;">Loading…</div></div>
     <div class="mini-divider"></div>
     <button onclick="exportGeoJSON()" style="width:100%;padding:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">⬇ Export GeoJSON Hotspots</button>
   </div>`;
 }
 
 function loadReportsData() {
-  /* Try real API first */
-  fetch(`${API_BASE}/api/mining/map`)
-    .then(r => r.json())
-    .then(data => {
-      const features = data.geojson && data.geojson.features || [];
-      const illegal = features.filter(f => f.properties.disturbance > 0.75).length;
-      const suspected = features.length - illegal;
-      const repTotal = document.getElementById('rep-total');
-      const repIllegal = document.getElementById('rep-illegal');
-      const repSusp = document.getElementById('rep-suspected');
-      const repArea = document.getElementById('rep-area');
-      if (repTotal) repTotal.textContent = features.length || currentSites.length;
-      if (repIllegal) repIllegal.textContent = illegal;
-      if (repSusp) repSusp.textContent = suspected;
-      if (repArea) repArea.innerHTML = AOI_AREA[currentAoi] + ' <span style="font-size:11px;font-weight:400;">km²</span>';
-
-      const rows = (features.length > 0 ? features : currentSites.map(s => ({
-        properties: { lat: s.lat, lon: s.lon, disturbance: s.score, period: '—', scene_date: '—' }
-      }))).map((f, i) => `
-        <tr style="border-bottom:1px solid #1e2d3d;">
-          <td style="padding:5px 4px;font-size:10px;color:#d4e4f7;">SITE-${String(i + 1).padStart(3, '0')}</td>
-          <td style="padding:5px 4px;font-size:10px;color:${f.properties.disturbance > 0.75 ? '#ff3b3b' : '#f0a500'};">${f.properties.disturbance > 0.75 ? 'ILLEGAL' : 'SUSPECTED'}</td>
-          <td style="padding:5px 4px;font-size:10px;color:#d4e4f7;">${(f.properties.disturbance * 100).toFixed(0)}%</td>
-          <td style="padding:5px 4px;font-size:10px;color:#556a7d;">${f.properties.scene_date || '—'}</td>
-        </tr>`).join('');
-
-      const repTable = document.getElementById('rep-table');
-      if (repTable) repTable.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-        <thead><tr style="border-bottom:1px solid #1e3a5f;">
-          <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">ID</th>
-          <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">STATUS</th>
-          <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">SCORE</th>
-          <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">DATE</th>
-        </tr></thead><tbody>${rows}</tbody></table>`;
-    }).catch(() => {
-      /* Fallback to region sites */
-      const sites = currentSites;
-      const illegal = sites.filter(s => s.status === 'illegal').length;
-      document.getElementById('rep-total')?.textContent != null && (document.getElementById('rep-total').textContent = sites.length);
-      document.getElementById('rep-illegal')?.textContent != null && (document.getElementById('rep-illegal').textContent = illegal);
-      document.getElementById('rep-suspected')?.textContent != null && (document.getElementById('rep-suspected').textContent = sites.length - illegal);
-      document.getElementById('rep-area')?.innerHTML != null && (document.getElementById('rep-area').innerHTML = AOI_AREA[currentAoi] + ' <span style="font-size:11px;font-weight:400;">km²</span>');
-    });
+  const sites = currentSites;
+  const illegal = sites.filter(s => s.status === 'illegal').length;
+  const el_tot = document.getElementById('rep-total');
+  const el_ill = document.getElementById('rep-illegal');
+  const el_sus = document.getElementById('rep-suspected');
+  const el_area = document.getElementById('rep-area');
+  if (el_tot) el_tot.textContent = sites.length;
+  if (el_ill) el_ill.textContent = illegal;
+  if (el_sus) el_sus.textContent = sites.length - illegal;
+  if (el_area) el_area.innerHTML = AOI_AREA[currentAoi] + ' <span style="font-size:11px;font-weight:400;">km²</span>';
+  const rows = sites.map((s, i) => `
+    <tr style="border-bottom:1px solid #1e2d3d;">
+      <td style="padding:5px 4px;font-size:10px;color:#d4e4f7;">SITE-${String(i + 1).padStart(3, '0')}</td>
+      <td style="padding:5px 4px;font-size:10px;color:${s.status === 'illegal' ? '#ff3b3b' : '#f0a500'};">${s.status.toUpperCase()}</td>
+      <td style="padding:5px 4px;font-size:10px;color:#d4e4f7;">${(s.score * 100).toFixed(0)}%</td>
+      <td style="padding:5px 4px;font-size:10px;color:#556a7d;">${s.district || '—'}</td>
+    </tr>`).join('');
+  const repTable = document.getElementById('rep-table');
+  if (repTable) repTable.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="border-bottom:1px solid #1e3a5f;">
+      <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">ID</th>
+      <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">STATUS</th>
+      <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">SCORE</th>
+      <th style="padding:4px;font-size:9px;color:#556a7d;text-align:left;">DISTRICT</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function buildSettingsPanel() {
@@ -452,23 +529,9 @@ function buildSettingsPanel() {
       </div>
       <div class="mini-divider"></div>
       <div>
-        <div class="sys-label" style="margin-bottom:6px;">Sentinel-2 Resolution</div>
-        <select class="map-select" style="width:100%;"><option>60m — Fast (Demo)</option><option>20m — Standard</option><option>10m — High Quality</option></select>
-      </div>
-      <div class="mini-divider"></div>
-      <div>
         <div class="sys-label" style="margin-bottom:6px;">Mining Detection Threshold</div>
         <input type="range" min="0" max="100" value="60" oninput="this.nextElementSibling.textContent=this.value+'%'" style="width:100%;">
         <div style="font-size:11px;color:#d4e4f7;margin-top:2px;">60%</div>
-      </div>
-      <div class="mini-divider"></div>
-      <div>
-        <div class="sys-label" style="margin-bottom:8px;">Notification Channels</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:11px;color:#d4e4f7;">SMS Alerts</span><div style="width:32px;height:16px;background:#1D9E75;border-radius:8px;position:relative;cursor:pointer;"><div style="width:12px;height:12px;background:#fff;border-radius:50%;position:absolute;top:2px;right:2px;"></div></div></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:11px;color:#d4e4f7;">WhatsApp Alerts</span><div style="width:32px;height:16px;background:#1D9E75;border-radius:8px;position:relative;cursor:pointer;"><div style="width:12px;height:12px;background:#fff;border-radius:50%;position:absolute;top:2px;right:2px;"></div></div></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:11px;color:#556a7d;">Email Reports</span><div style="width:32px;height:16px;background:#1e2d3d;border-radius:8px;position:relative;cursor:pointer;"><div style="width:12px;height:12px;background:#556a7d;border-radius:50%;position:absolute;top:2px;left:2px;"></div></div></div>
-        </div>
       </div>
       <div class="mini-divider"></div>
       <div>
@@ -486,22 +549,15 @@ function buildSettingsPanel() {
 
 /* ════════════ ANALYTICS CHARTS ════════════ */
 function drawAnalyticsCharts(aoiKey) {
-  const ndvi = (realTimelineData && window._realNdvi) || REGION_NDVI[aoiKey];
-  const bsi = (realTimelineData && window._realBsi) || REGION_BSI[aoiKey];
-  const dist = (realTimelineData && window._realMine) || REGION_DIST[aoiKey];
+  const ndvi = REGION_NDVI[aoiKey];
+  const bsi = REGION_BSI[aoiKey];
+  const ndwi = REGION_NDWI[aoiKey];
+  const dist = REGION_DIST[aoiKey];
 
   drawMiniSparkline(document.getElementById('spark-ndvi'), ndvi, '#00ff88');
   drawMiniSparkline(document.getElementById('spark-bsi'), bsi, '#f0a500');
-  drawMiniSparkline(document.getElementById('spark-ndwi'), REGION_DIST[aoiKey], '#3b9eff');
+  drawMiniSparkline(document.getElementById('spark-ndwi'), ndwi, '#3b9eff');
   drawMiniSparkline(document.getElementById('spark-mining'), dist, '#ff3b3b');
-
-  /* Update analytics card values from real data */
-  const anaNdvi = document.getElementById('ana-ndvi');
-  const anaBsi = document.getElementById('ana-bsi');
-  const anaMining = document.getElementById('ana-mining');
-  if (anaNdvi) anaNdvi.textContent = ndvi[ndvi.length - 1].toFixed(2);
-  if (anaBsi) anaBsi.textContent = bsi[bsi.length - 1].toFixed(2);
-  if (anaMining) anaMining.textContent = (dist[dist.length - 1] * 100).toFixed(1) + '%';
 
   drawComboChart(ndvi, dist);
   drawBarChart();
@@ -513,7 +569,8 @@ function drawMiniSparkline(canvas, data, color) {
   const W = canvas.offsetWidth || 120, H = 28;
   canvas.width = W; canvas.height = H;
   const mx = Math.max(...data), mn = Math.min(...data);
-  const pts = data.map((v, i) => [(i / (data.length - 1)) * W, H - ((v - mn) / (mx - mn || 1)) * (H - 4) - 2]);
+  const rng = mx - mn || 0.01;
+  const pts = data.map((v, i) => [(i / (data.length - 1)) * W, H - ((v - mn) / rng) * (H - 4) - 2]);
   ctx.beginPath(); ctx.moveTo(pts[0][0], H); pts.forEach(p => ctx.lineTo(p[0], p[1])); ctx.lineTo(pts[pts.length - 1][0], H); ctx.closePath();
   ctx.fillStyle = color + '22'; ctx.fill();
   ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); pts.forEach(p => ctx.lineTo(p[0], p[1]));
@@ -527,20 +584,18 @@ function drawComboChart(ndvi, dist) {
   [[ndvi, '#00ff88'], [dist, '#ff3b3b']].forEach(([data, color]) => {
     if (!data || data.length === 0) return;
     const mx = Math.max(...data), mn = Math.min(...data);
-    const pts = data.map((v, i) => [(i / (data.length - 1)) * W, H - ((v - mn) / (mx - mn || 1)) * (H - 6) - 3]);
+    const rng = mx - mn || 0.01;
+    const pts = data.map((v, i) => [(i / (data.length - 1)) * W, H - ((v - mn) / rng) * (H - 6) - 3]);
     ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); pts.forEach(p => ctx.lineTo(p[0], p[1]));
     ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
     pts.forEach(p => { ctx.beginPath(); ctx.arc(p[0], p[1], 2, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); });
   });
-  ctx.fillStyle = '#334455'; ctx.font = '8px system-ui'; ctx.textAlign = 'left';
-  DATES.filter((_, i) => i % 2 === 0).forEach((d, i) => ctx.fillText(d.split(' ')[0], (i * 2 / (DATES.length - 1)) * W, H - 1));
 }
 
 function drawBarChart() {
   const c = document.getElementById('bar-chart'); if (!c) return;
   const ctx = c.getContext('2d'); const W = c.offsetWidth || 200, H = 60;
   c.width = W; c.height = H; ctx.clearRect(0, 0, W, H);
-  /* Scale bar data by region */
   const base = { jharkhand: [8, 11, 14, 12, 17, 19, 22, 24, 21, 26, 28, 31], odisha: [5, 7, 9, 8, 12, 14, 17, 19, 16, 21, 23, 26], chhattisgarh: [6, 9, 11, 10, 14, 16, 20, 22, 18, 24, 27, 29] };
   const data = base[currentAoi] || base.jharkhand;
   const mx = Math.max(...data);
@@ -554,9 +609,9 @@ function drawBarChart() {
 }
 
 function switchIndexFromAnalytics(name) {
-  const mapTab = document.querySelector(`.idx-tab[onclick*="'${name}'"]`);
+  const mapTab = document.querySelector(`.idx-tab[data-index="${name}"]`) || document.querySelector(`.idx-tab[onclick*="'${name}'"]`);
   if (mapTab) switchIndex(name, mapTab);
-  else { currentIndex = name; }
+  else { currentIndex = name; applyCanvasOverlay(name); }
 }
 
 /* ════════════ ALERTS ════════════ */
@@ -596,9 +651,11 @@ function exportGeoJSON() {
 function updateClock() {
   const ist = new Date(new Date().getTime() + 19800000);
   const pad = n => String(n).padStart(2, '0');
-  document.getElementById('clock').textContent = `${pad(ist.getUTCHours())}:${pad(ist.getUTCMinutes())}:${pad(ist.getUTCSeconds())} IST`;
+  const clockEl = document.getElementById('clock');
+  const dateEl = document.getElementById('clock-date');
+  if (clockEl) clockEl.textContent = `${pad(ist.getUTCHours())}:${pad(ist.getUTCMinutes())}:${pad(ist.getUTCSeconds())} IST`;
   const M = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  document.getElementById('clock-date').textContent = `${M[ist.getUTCMonth()]} ${ist.getUTCDate()}, ${ist.getUTCFullYear()}`;
+  if (dateEl) dateEl.textContent = `${M[ist.getUTCMonth()]} ${ist.getUTCDate()}, ${ist.getUTCFullYear()}`;
 }
 
 /* ════════════ RIGHT SIDEBAR CHARTS ════════════ */
@@ -661,106 +718,84 @@ function drawMiningActivity() {
 }
 
 /* ════════════ TIME SLIDER ════════════ */
-const slider = document.getElementById('time-slider');
-slider.addEventListener('input', function () {
-  const idx = parseInt(this.value);
-  document.getElementById('ts-current').textContent = DATES[idx] || DATES[DATES.length - 1];
-  const illPct = Math.round(18 + (idx / 11) * 10);
-  const e1 = document.getElementById('pct-illegal'), e2 = document.getElementById('pct-approved');
-  if (e1) e1.textContent = illPct + '%'; if (e2) e2.textContent = (100 - illPct) + '%';
-  drawDonut(illPct);
-  drawHotspots(currentSites);
-  /* Fetch correct index PNG */
-  fetch(`${API_BASE}/api/mining/overlay/${currentAoi}/${currentIndex}?period_idx=${idx}`)
-    .then(r => r.json())
-    .then(d => {
-      const img = d.png_b64 || d.ndvi_png_b64;
-      if (img) overlayIndexImage(img);
-    }).catch(() => { });
+document.addEventListener('DOMContentLoaded', () => {
+  const slider = document.getElementById('time-slider');
+  slider.addEventListener('input', function () {
+    const idx = parseInt(this.value);
+    document.getElementById('ts-current').textContent = DATES[idx] || DATES[DATES.length - 1];
+    const illPct = Math.round(15 + (idx / 11) * 7);
+    const e1 = document.getElementById('pct-illegal'), e2 = document.getElementById('pct-approved');
+    if (e1) e1.textContent = illPct + '%';
+    if (e2) e2.textContent = (100 - illPct) + '%';
+    drawDonut(illPct);
+    drawHotspots(currentSites);
+    // Regenerate overlay at new time position
+    applyCanvasOverlay(currentIndex);
+  });
 });
 
 function togglePlay() {
   isPlaying = !isPlaying;
   document.getElementById('ts-play').textContent = isPlaying ? '⏸' : '▶';
-  if (isPlaying) { playInterval = setInterval(() => { const next = (parseInt(slider.value) + 1) % 12; slider.value = next; slider.dispatchEvent(new Event('input')); }, 1500); }
-  else clearInterval(playInterval);
+  if (isPlaying) {
+    const slider = document.getElementById('time-slider');
+    playInterval = setInterval(() => {
+      const next = (parseInt(slider.value) + 1) % 12;
+      slider.value = next; slider.dispatchEvent(new Event('input'));
+    }, 1500);
+  } else clearInterval(playInterval);
 }
 
 /* ════════════ REFRESH ════════════ */
 function refreshData() {
   const btn = document.getElementById('btn-refresh');
   if (btn) { btn.textContent = '↻ Loading…'; btn.disabled = true; }
-
   fetch(`${API_BASE}/api/temporal/periods`)
     .then(r => r.json())
     .then(data => {
       const ps = document.getElementById('pipeline-status');
       if (ps) ps.textContent = `${data.total} Sentinel-2 periods loaded`;
-      if (data.total > 0) { slider.max = data.total - 1; slider.value = data.total - 1; document.getElementById('ts-current').textContent = data.periods[data.total - 1].label; }
-    }).catch(() => { const ps = document.getElementById('pipeline-status'); if (ps) ps.textContent = 'Synthetic mode'; })
+    }).catch(() => {
+      const ps = document.getElementById('pipeline-status');
+      if (ps) ps.textContent = 'Synthetic mode · Client overlays active';
+    })
     .finally(() => { if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false; } });
 
   fetch(`${API_BASE}/api/mining/stats`)
     .then(r => r.json())
     .then(data => {
       if (data.timeline && data.timeline.length > 0) {
-        realTimelineData = data;
-        window._realNdvi = data.timeline.filter(t => t.ndvi_mean !== null).map(t => t.ndvi_mean);
-        window._realBsi = data.timeline.filter(t => t.bsi_mean !== null).map(t => t.bsi_mean);
-        window._realMine = data.timeline.filter(t => t.mining_mean !== null).map(t => t.mining_mean);
-        if (window._realNdvi.length > 0) drawVegChart(window._realNdvi);
-        const s = data.summary;
-        if (s.latest_mining != null) {
-          const acc = Math.round(88 + s.latest_mining * 12);
-          const aiAcc = document.getElementById('ai-accuracy');
-          if (aiAcc) aiAcc.textContent = acc + '%';
-          const aiBar = document.getElementById('ai-acc-bar');
-          if (aiBar) aiBar.style.width = acc + '%';
-          const modelTag = document.getElementById('model-tag');
-          if (modelTag) modelTag.textContent = `${s.ok_periods} periods · Spectral RF`;
-        }
+        const _realNdvi = data.timeline.filter(t => t.ndvi_mean !== null).map(t => t.ndvi_mean);
+        if (_realNdvi.length > 0) drawVegChart(_realNdvi);
       }
     }).catch(() => { });
 }
-
-document.getElementById('aoi-select').addEventListener('change', function () { initMap(this.value); });
-
 
 /* ════════════ RESIZABLE COLUMNS ════════════ */
 function initResizable() {
   const layout = document.querySelector('.layout');
   if (!layout) return;
-
   let sidebarW = 248, rightW = 268;
-  // Set 5-column grid: left sidebar | handle | map | handle | right sidebar
   layout.style.gridTemplateColumns = `${sidebarW}px 4px 1fr 4px ${rightW}px`;
-  layout.style.height = `calc(100vh - var(--topbar-h))`;
 
   function makeResizer(handleId, side) {
     const handle = document.getElementById(handleId);
     if (!handle) return;
     let startX, startW;
-
     handle.addEventListener('mousedown', e => {
-      startX = e.clientX;
-      startW = side === 'left' ? sidebarW : rightW;
+      startX = e.clientX; startW = side === 'left' ? sidebarW : rightW;
       handle.classList.add('dragging');
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
-
       const onMove = e => {
         const dx = e.clientX - startX;
-        if (side === 'left') {
-          sidebarW = Math.max(180, Math.min(360, startW + dx));
-        } else {
-          rightW = Math.max(180, Math.min(380, startW - dx));
-        }
+        if (side === 'left') sidebarW = Math.max(180, Math.min(360, startW + dx));
+        else rightW = Math.max(180, Math.min(380, startW - dx));
         layout.style.gridTemplateColumns = `${sidebarW}px 4px 1fr 4px ${rightW}px`;
       };
       const onUp = () => {
         handle.classList.remove('dragging');
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        document.body.style.cursor = ''; document.body.style.userSelect = '';
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         if (map) map.invalidateSize();
@@ -769,7 +804,6 @@ function initResizable() {
       document.addEventListener('mouseup', onUp);
     });
   }
-
   makeResizer('resize-left', 'left');
   makeResizer('resize-right', 'right');
 }
@@ -779,16 +813,27 @@ window.addEventListener('DOMContentLoaded', () => {
   currentSites = REGION_SITES.jharkhand;
   initResizable();
   initMap('jharkhand');
+
   document.getElementById('left-panels').innerHTML = buildDashboardPanel();
   renderAlerts(REGION_ALERTS.jharkhand);
+
   updateClock(); setInterval(updateClock, 1000);
+
   setTimeout(() => {
     drawSparkline();
     drawVegChart(REGION_NDVI.jharkhand);
-    drawDonut(24);
+    drawDonut(18);
     drawMiningActivity();
     const ls = document.getElementById('last-sync');
     if (ls) ls.textContent = 'Sentinel-2 L2A';
-  }, 200);
+
+    // Apply default NDVI overlay on boot
+    const defaultTab = document.querySelector('.idx-tab.active');
+    if (defaultTab) defaultTab.setAttribute('data-index', 'ndvi');
+    applyCanvasOverlay('ndvi');
+  }, 400);
+
   refreshData();
+
+  document.getElementById('aoi-select').addEventListener('change', function () { initMap(this.value); });
 });

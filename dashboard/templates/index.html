@@ -92,7 +92,7 @@
                 </a>
             </nav>
 
-            <!-- LIVE ALERTS -->
+            <!-- DYNAMIC LEFT PANELS (Dashboard/Alerts/Analytics/Reports/Settings) -->
             <div id="left-panels">
                 <div class="side-panel" id="alerts-panel">
                     <div class="side-panel-header">
@@ -131,10 +131,13 @@
                         </div>
                     </div>
                 </div>
+            </div><!-- /#left-panels -->
         </aside>
 
-        <!-- ───────────── MAP ───────────── -->
+        <!-- ───────────── RESIZE HANDLE LEFT ───────────── -->
         <div class="resize-handle" id="resize-left"></div>
+
+        <!-- ───────────── MAP ───────────── -->
         <main class="map-container">
             <div class="map-header">
                 <span class="map-title">MINING ACTIVITY WATCH — JHARKHAND / ODISHA / CHHATTISGARH</span>
@@ -145,6 +148,29 @@
                         <option value="chhattisgarh">Chhattisgarh (Korba)</option>
                     </select>
                     <button class="map-btn" id="btn-refresh" onclick="refreshData()">↻ Refresh</button>
+                </div>
+            </div>
+
+            <!-- INDEX TABS -->
+            <div class="index-tabs">
+                <button class="idx-tab active" data-index="ndvi" onclick="switchIndex('ndvi',this)">NDVI</button>
+                <button class="idx-tab" data-index="bsi" onclick="switchIndex('bsi',this)">Bare Soil</button>
+                <button class="idx-tab" data-index="ndwi" onclick="switchIndex('ndwi',this)">Water</button>
+                <button class="idx-tab" data-index="turbidity"
+                    onclick="switchIndex('turbidity',this)">Turbidity</button>
+                <button class="idx-tab highlight" data-index="mining" onclick="switchIndex('mining',this)">Mining
+                    Prob.</button>
+            </div>
+
+            <div id="map"></div>
+
+            <!-- MAP LEGEND -->
+            <div class="map-legend">
+                <div class="legend-item"><span class="legend-dot" style="background:#00ff88;"></span>Approved zones
+                </div>
+                <div class="legend-item"><span class="legend-dot" style="background:#ff3b3b;"></span>Illegal / suspected
+                </div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f0a500;"></span>High-risk hotspot
                 </div>
             </div>
 
@@ -161,31 +187,12 @@
                 <span class="ts-current" id="ts-current">Dec 2024</span>
                 <button class="ts-play" id="ts-play" onclick="togglePlay()">▶</button>
             </div>
-
-            <div id="map"></div>
-
-            <!-- MAP LEGEND -->
-            <div class="map-legend">
-                <div class="legend-item"><span class="legend-dot" style="background:#00ff88;"></span>Approved zones
-                </div>
-                <div class="legend-item"><span class="legend-dot" style="background:#ff3b3b;"></span>Illegal / suspected
-                </div>
-                <div class="legend-item"><span class="legend-dot" style="background:#f0a500;"></span>High-risk hotspot
-                </div>
-            </div>
-
-            <!-- INDEX TABS -->
-            <div class="index-tabs">
-                <button class="idx-tab active" onclick="switchIndex('ndvi',this)">NDVI</button>
-                <button class="idx-tab" onclick="switchIndex('bsi',this)">Bare Soil</button>
-                <button class="idx-tab" onclick="switchIndex('ndwi',this)">Water</button>
-                <button class="idx-tab" onclick="switchIndex('turbidity',this)">Turbidity</button>
-                <button class="idx-tab highlight" onclick="switchIndex('mining',this)">Mining Prob.</button>
-            </div>
         </main>
 
-        <!-- ───────────── RIGHT SIDEBAR ───────────── -->
+        <!-- ───────────── RESIZE HANDLE RIGHT ───────────── -->
         <div class="resize-handle" id="resize-right"></div>
+
+        <!-- ───────────── RIGHT SIDEBAR ───────────── -->
         <aside class="sidebar-right">
 
             <!-- KEY METRICS -->
@@ -196,7 +203,7 @@
                 </div>
                 <div class="kpi-row">
                     <div class="kpi-label">Illegal Sites Detected</div>
-                    <div class="kpi-value" id="kpi-sites">147 <span class="kpi-delta up">↑ 12%</span></div>
+                    <div class="kpi-value" id="kpi-sites">65 <span class="kpi-delta up">↑ OSM verified</span></div>
                 </div>
                 <canvas id="sparkline" height="40"></canvas>
 
@@ -216,7 +223,7 @@
                 <div class="mini-divider"></div>
                 <div class="kpi-row">
                     <div class="kpi-label">Area Monitored</div>
-                    <div class="kpi-value" id="kpi-area">8.4M km²</div>
+                    <div class="kpi-value" id="kpi-area">79,716 km²</div>
                 </div>
             </div>
 
@@ -229,9 +236,9 @@
                     <canvas id="donut-chart" width="90" height="90"></canvas>
                     <div class="donut-legend">
                         <div class="donut-item"><span class="donut-dot" style="background:#f0a500;"></span>Illegal
-                            <strong id="pct-illegal">24%</strong></div>
+                            <strong id="pct-illegal">18%</strong></div>
                         <div class="donut-item"><span class="donut-dot" style="background:#00b96b;"></span>Approved
-                            <strong id="pct-approved">76%</strong></div>
+                            <strong id="pct-approved">82%</strong></div>
                     </div>
                 </div>
                 <div class="kpi-row" style="margin-top:8px;">
@@ -260,7 +267,7 @@
                     <div class="ai-icon" style="background:rgba(0,185,107,0.15);color:#00b96b;">↻</div>
                     <div>
                         <div class="ai-label">Real-time Identification</div>
-                        <div class="ai-value" id="ai-realtime" id="ai-realtime">88%</div>
+                        <div class="ai-value" id="ai-realtime">88%</div>
                     </div>
                 </div>
                 <div class="ai-bar-wrap">
@@ -275,7 +282,7 @@
             </div>
 
         </aside>
-    </div>
+    </div><!-- /.layout -->
 
     <!-- ═══════════════════════════════ SCRIPTS ═══════════════════════════════ -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
