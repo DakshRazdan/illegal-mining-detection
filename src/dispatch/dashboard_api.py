@@ -53,6 +53,9 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+from src.dispatch.mining_endpoints import router as mining_router
+app.include_router(mining_router, prefix="/api/mining")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -339,28 +342,24 @@ async def get_temporal_periods():
 
 @app.get("/api/temporal/frame/{index}")
 async def get_temporal_frame(index: int):
-    """
-    Returns NDVI PNG (base64) for a specific time period index.
-    """
-    from src.ingest.temporal_fetch import (
-        fetch_ndvi_composite, DEFAULT_PERIODS
-    )
-    
+    from src.ingest.temporal_fetch import fetch_ndvi_composite, DEFAULT_PERIODS
     if index < 0 or index >= len(DEFAULT_PERIODS):
         return {"error": "Index out of range"}
-    
     start, end, label = DEFAULT_PERIODS[index]
     result = fetch_ndvi_composite(start, end, label)
-    
     return {
-        "index": index,
-        "label": result["label"],
+        "index": index, "label": result["label"],
         "scene_date": result.get("scene_date"),
         "ndvi_png_b64": result.get("ndvi_png_b64"),
+        "bsi_png_b64": result.get("bsi_png_b64"),
+        "ndwi_png_b64": result.get("ndwi_png_b64"),
+        "turbidity_png_b64": result.get("turbidity_png_b64"),
+        "mining_png_b64": result.get("mining_png_b64"),
         "rgb_png_b64": result.get("rgb_png_b64"),
         "ndvi_mean": result.get("ndvi_mean"),
-        "status": result["status"],
-        "error": result.get("error")
+        "bsi_mean": result.get("bsi_mean"),
+        "mining_mean": result.get("mining_mean"),
+        "status": result["status"], "error": result.get("error"),
     }
 
 __all__ = ["app", "set_pipeline_result", "get_pipeline_result"]
