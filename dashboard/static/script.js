@@ -241,21 +241,32 @@ function switchIndex(name, btn) {
   btn.classList.add('active');
   currentIndex = name;
   if (indexOverlay) { map.removeLayer(indexOverlay); indexOverlay = null; }
-  if (currentAoi !== 'jharkhand') {
-    const ps = document.getElementById('pipeline-status');
-    if (ps) ps.textContent = 'Overlay available for Jharkhand only — run Colab for ' + AOI_LABELS[currentAoi];
-    return;
-  }
+
   const idx = parseInt(document.getElementById('time-slider').value);
-  fetch(`${API_BASE}/api/temporal/frame/${idx}`)
+  const ps = document.getElementById('pipeline-status');
+
+  // Use unified overlay endpoint - works for all 3 AOIs
+  // Jharkhand: real Sentinel-2 data | Odisha/CG: synthetic from OSM mines
+  fetch(`${API_BASE}/api/mining/overlay/${currentAoi}/${name}?period_idx=${idx}`)
     .then(r => r.json())
     .then(data => {
-      const key = name + '_png_b64';
-      const img = data[key] || data.ndvi_png_b64;
-      if (img) overlayIndexImage(img);
-      else { const ps = document.getElementById('pipeline-status'); if (ps) ps.textContent = 'No ' + name.toUpperCase() + ' data cached'; }
-    }).catch(() => { });
+      if (data.png_b64) {
+        overlayIndexImage(data.png_b64);
+        if (ps) ps.textContent = `${name.toUpperCase()} overlay · ${data.source === 'sentinel2' ? 'Sentinel-2 real data' : 'OSM-derived synthetic'} · ${AOI_LABELS[currentAoi]}`;
+      }
+    }).catch(() => {
+      // Fallback to temporal frame for Jharkhand
+      if (currentAoi === 'jharkhand') {
+        fetch(`${API_BASE}/api/temporal/frame/${idx}`)
+          .then(r => r.json())
+          .then(d => {
+            const img = d[name + '_png_b64'] || d.ndvi_png_b64;
+            if (img) overlayIndexImage(img);
+          }).catch(() => { });
+      }
+    });
 }
+
 
 function overlayIndexImage(b64) {
   if (!map) return;
@@ -660,11 +671,10 @@ slider.addEventListener('input', function () {
   drawDonut(illPct);
   drawHotspots(currentSites);
   /* Fetch correct index PNG */
-  fetch(`${API_BASE}/api/temporal/frame/${idx}`)
+  fetch(`${API_BASE}/api/mining/overlay/${currentAoi}/${currentIndex}?period_idx=${idx}`)
     .then(r => r.json())
     .then(d => {
-      const key = currentIndex + '_png_b64';
-      const img = d[key] || d.ndvi_png_b64;
+      const img = d.png_b64 || d.ndvi_png_b64;
       if (img) overlayIndexImage(img);
     }).catch(() => { });
 });
@@ -722,7 +732,9 @@ function initResizable() {
   if (!layout) return;
 
   let sidebarW = 248, rightW = 268;
+  // Set 5-column grid: left sidebar | handle | map | handle | right sidebar
   layout.style.gridTemplateColumns = `${sidebarW}px 4px 1fr 4px ${rightW}px`;
+  layout.style.height = `calc(100vh - var(--topbar-h))`;
 
   function makeResizer(handleId, side) {
     const handle = document.getElementById(handleId);
