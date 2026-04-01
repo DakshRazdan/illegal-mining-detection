@@ -261,12 +261,42 @@ def extract_hotspots(
         mean_score = float(np.mean(base_map[blob]))
 
         # Check if inside known mine zone
-        is_inside_mine = bool(mine_mask[int(cy), int(cx)]) if mine_mask is not None else False
-        status = "approved" if is_inside_mine else "illegal"
+        # ── Stricter classification ─────────────────────────────────────────
+        # Check centroid AND majority of blob pixels against mine mask
+        if mine_mask is not None:
+            blob_pixels_in_mine = int(mine_mask[rows, cols].sum())
+            pct_in_mine = blob_pixels_in_mine / max(n_px, 1)
+            # Only APPROVED if >60% of the blob overlaps a known mine zone
+            is_inside_mine = pct_in_mine > 0.60
+        else:
+            is_inside_mine = False
 
-        risk = mean_score * 100 + (0 if is_inside_mine else 40)
+        # Three-tier classification:
+        # APPROVED  : majority overlap with known lease + any score
+        # ILLEGAL   : outside known lease + high confidence (score > 0.55)
+        # SUSPECTED : outside known lease + lower confidence (0.35–0.55)
+        if is_inside_mine:
+            status = "approved"
+        elif mean_score > 0.55:
+            status = "illegal"
+        else:
+            status = "suspected"
+
+        # Risk formula — stricter penalties
+        base_risk = mean_score * 100
+        if status == "illegal":
+            # Outside lease + high score → heavy penalty
+            risk = base_risk + 40 + (area_ha / 10)   # larger area = higher risk
+        elif status == "suspected":
+            # Outside lease + moderate score → moderate penalty
+            risk = base_risk + 20
+        else:
+            # Inside approved zone — no penalty, but still flag large expansions
+            risk = base_risk + (10 if area_ha > 200 else 0)
+
         risk = min(risk, 100.0)
-        risk_level = "CRITICAL" if risk >= 80 else "HIGH" if risk >= 60 else "MEDIUM" if risk >= 40 else "LOW"
+        # Stricter thresholds: need 85+ for CRITICAL
+        risk_level = "CRITICAL" if risk >= 85 else "HIGH" if risk >= 65 else "MEDIUM" if risk >= 45 else "LOW"
 
         detections.append({
             "lat":          round(lat, 5),

@@ -86,8 +86,9 @@ def _weights():
         "delta_nbr":  w.get("delta_nbr",  0.15),
     }
 
-THRESHOLD_STAGE1  = 0.35   # Stage 1 detection threshold
-THRESHOLD_ILLEGAL = 0.35   # Final illegal classification threshold
+THRESHOLD_STAGE1  = 0.35   # Stage 1 broad detection threshold
+THRESHOLD_ILLEGAL = 0.55   # Confirmed illegal: needs higher confidence
+THRESHOLD_SUSPECT = 0.35   # Suspected: lower confidence, outside lease
 PIXEL_AREA_HA     = 0.36   # 60m × 60m = 3600m² = 0.36 ha
 MIN_AREA_HA       = 0.5
 SIZE              = (128, 128)
@@ -365,21 +366,25 @@ def extract_detections(
     stage2 = score_filtered > THRESHOLD_STAGE1
 
     # ── Stage 3 ──────────────────────────────────────────────────────────────
-    stage_legal   = stage2 & mine_mask
-    stage_illegal = stage2 & ~mine_mask
+    # Three-tier: approved (inside lease) | illegal (outside + high score) | suspected (outside + lower)
+    high_conf  = score_filtered > 0.55   # confirmed illegal threshold
+    stage_legal    = stage2 & mine_mask
+    stage_illegal  = stage2 & ~mine_mask & high_conf
+    stage_suspected = stage2 & ~mine_mask & ~high_conf
 
     s1_ha = stage1.sum() * PIXEL_AREA_HA
     s2_ha = stage2.sum() * PIXEL_AREA_HA
     legal_ha   = stage_legal.sum()   * PIXEL_AREA_HA
     illegal_ha = stage_illegal.sum() * PIXEL_AREA_HA
 
-    logger.info("AOI={} | S1={:.0f}ha S2={:.0f}ha legal={:.0f}ha illegal={:.0f}ha",
-                aoi_key, s1_ha, s2_ha, legal_ha, illegal_ha)
+    suspected_ha = stage_suspected.sum() * PIXEL_AREA_HA
+    logger.info("AOI={} | S1={:.0f}ha S2={:.0f}ha legal={:.0f}ha illegal={:.0f}ha suspected={:.0f}ha",
+                aoi_key, s1_ha, s2_ha, legal_ha, illegal_ha, suspected_ha)
 
     # ── Stage 4: connected components ────────────────────────────────────────
     detections = []
 
-    for mask_layer, status in [(stage_illegal, "illegal"), (stage_legal, "approved")]:
+    for mask_layer, status in [(stage_illegal, "illegal"), (stage_suspected, "suspected"), (stage_legal, "approved")]:
         labeled, n = scipy_label(mask_layer)
         for i in range(1, n + 1):
             blob = labeled == i
@@ -397,16 +402,20 @@ def extract_detections(
 
             mean_score = float(np.mean(score_filtered[blob]))
 
-            # Risk scoring — matches risk_score.py logic
+            # Stricter risk scoring
             base = mean_score * 100
-            risk = base + (40 if status == "illegal" else 0)
-            if area_ha > 100:
-                risk = min(risk + 10, 100)
+            if status == "illegal":
+                risk = base + 40 + min(area_ha / 10, 20)  # area bonus capped at 20
+            elif status == "suspected":
+                risk = base + 20
+            else:
+                risk = base + (10 if area_ha > 200 else 0)
             risk = min(risk, 100.0)
 
-            if risk >= 80:   risk_level = "CRITICAL"
-            elif risk >= 60: risk_level = "HIGH"
-            elif risk >= 40: risk_level = "MEDIUM"
+            # Stricter thresholds
+            if risk >= 85:   risk_level = "CRITICAL"
+            elif risk >= 65: risk_level = "HIGH"
+            elif risk >= 45: risk_level = "MEDIUM"
             else:            risk_level = "LOW"
 
             detections.append({
