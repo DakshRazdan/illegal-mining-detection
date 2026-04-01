@@ -36,7 +36,8 @@ const SITES = [
   { id: 'SITE-007', name: 'Hotspot G', lat: 23.39, lon: 86.44, area: 156, score: 0.63, status: 'suspected', district: 'Ramgarh', date: 'Sep 2022' },
 ];
 
-const APPROVED_ZONES = [
+let OSM_BOUNDARIES = null;
+const APPROVED_ZONES_FALLBACK = [
   { name: 'Zone A — Dhanbad Coalfield', coords: [[24.2, 86.2], [24.4, 86.5], [24.3, 86.8], [24.0, 86.7], [23.9, 86.4]] },
   { name: 'Zone B — Bokaro Block', coords: [[23.6, 85.9], [23.8, 86.1], [23.7, 86.4], [23.5, 86.3], [23.4, 86.0]] },
   { name: 'Zone C — Ramgarh', coords: [[23.3, 85.7], [23.5, 85.9], [23.4, 86.1], [23.2, 86.0], [23.1, 85.8]] },
@@ -70,15 +71,49 @@ function initMap(aoiKey = 'jharkhand') {
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { maxZoom: 18, opacity: 0.5, subdomains: 'abcd' }).addTo(map);
   drawZones(); drawHotspots(SITES);
   map.fitBounds(AOI_BOUNDS[aoiKey], { padding: [20, 20] });
+  loadOSMBoundaries(aoiKey);
 }
 
 function drawZones() {
   if (approvedLayer) map.removeLayer(approvedLayer);
   if (illegalLayer) map.removeLayer(illegalLayer);
   approvedLayer = L.layerGroup(); illegalLayer = L.layerGroup();
-  APPROVED_ZONES.forEach(z => L.polygon(z.coords, { color: '#00ff88', weight: 1.5, opacity: 0.85, fillColor: '#00ff88', fillOpacity: 0.04, dashArray: '4 3' }).bindTooltip(`<span style="color:#00ff88;font-size:11px;">${z.name}</span>`, { sticky: true }).addTo(approvedLayer));
+
+  if (OSM_BOUNDARIES && OSM_BOUNDARIES.features && OSM_BOUNDARIES.features.length > 0) {
+    OSM_BOUNDARIES.features.forEach(f => {
+      const name = f.properties.name || 'Mining Site';
+      const op = f.properties.operator || '';
+      const tip = `<span style="color:#00ff88;font-size:11px;">${name}${op ? ' · ' + op : ''}</span>`;
+      if (f.geometry.type === 'Polygon') {
+        const coords = f.geometry.coordinates[0].map(c => [c[1], c[0]]);
+        L.polygon(coords, { color: '#00ff88', weight: 1, opacity: 0.7, fillColor: '#00ff88', fillOpacity: 0.06, dashArray: '4 3' })
+          .bindTooltip(tip, { sticky: true }).addTo(approvedLayer);
+      } else if (f.geometry.type === 'Point') {
+        const [lon, lat] = f.geometry.coordinates;
+        L.circleMarker([lat, lon], { radius: 5, color: '#00ff88', fillColor: '#00ff88', fillOpacity: 0.5, weight: 1 })
+          .bindTooltip(tip, { sticky: true }).addTo(approvedLayer);
+      }
+    });
+  } else {
+    APPROVED_ZONES_FALLBACK.forEach(z => L.polygon(z.coords, { color: '#00ff88', weight: 1.5, opacity: 0.85, fillColor: '#00ff88', fillOpacity: 0.04, dashArray: '4 3' }).bindTooltip(`<span style="color:#00ff88;font-size:11px;">${z.name}</span>`, { sticky: true }).addTo(approvedLayer));
+  }
   ILLEGAL_ZONES.forEach(z => L.polygon(z.coords, { color: '#ff3b3b', weight: 2, opacity: 0.9, fillColor: '#ff3b3b', fillOpacity: 0.08 }).bindTooltip(`<span style="color:#ff3b3b;font-size:11px;">⚠ ${z.name}</span>`, { sticky: true }).addTo(illegalLayer));
   approvedLayer.addTo(map); illegalLayer.addTo(map);
+}
+
+function loadOSMBoundaries(aoiKey) {
+  const regionFile = { 'jharkhand': 'jharkhand', 'odisha': 'odisha', 'chhattisgarh': 'chhattisgarh' }[aoiKey] || 'jharkhand';
+  fetch(`${API_BASE}/api/leases?region=${regionFile}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.features && data.features.length > 0) {
+        OSM_BOUNDARIES = data;
+        drawZones();
+        const ps = document.getElementById('pipeline-status');
+        if (ps) ps.textContent = `${data.features.length} real mine boundaries loaded`;
+      }
+    })
+    .catch(() => { });
 }
 
 function drawHotspots(sites) {

@@ -301,13 +301,12 @@ async def get_stats():
 
 
 @app.get("/api/leases")
-async def get_leases():
-    lease_path = Path("config/lease_boundaries/jharkhand_sample.geojson")
+async def get_leases(region: str = "jharkhand"):
+    lease_path = Path(f"config/lease_boundaries/{region}.geojson")
     if not lease_path.exists():
-        return JSONResponse(
-            {"type": "FeatureCollection", "features": [], "error": "Lease file not found"},
-            status_code=404,
-        )
+        lease_path = Path("config/lease_boundaries/india_coal_belt.geojson")
+    if not lease_path.exists():
+        return JSONResponse({"type":"FeatureCollection","features":[]}, status_code=404)
     return json.loads(lease_path.read_text())
 
 
