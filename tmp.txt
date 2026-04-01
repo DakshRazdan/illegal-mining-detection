@@ -1,0 +1,102 @@
+Traceback (most recent call last):
+  File "<string>", line 5, in <module>
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\testclient.py", line 473, in get
+    return super().get(
+           ^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\httpx\_client.py", line 1053, in get
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\testclient.py", line 445, in request
+    return super().request(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\httpx\_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\testclient.py", line 348, in handle_request
+    raise exc
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\testclient.py", line 345, in handle_request
+    portal.call(self.app, scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\anyio\from_thread.py", line 334, in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\anyio\from_thread.py", line 259, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\fastapi\routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\fastapi\routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\fastapi\routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\fastapi\routing.py", line 328, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\src\dispatch\dashboard_api.py", line 170, in root
+    return templates.TemplateResponse(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\templating.py", line 148, in TemplateResponse
+    template = self.get_template(name)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\starlette\templating.py", line 115, in get_template
+    return self.env.get_template(name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\jinja2\environment.py", line 964, in _load_template
+    template = self.cache.get(cache_key)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\jinja2\utils.py", line 477, in get
+    return self[key]
+           ~~~~^^^^^
+  File "C:\Users\razda\OneDrive\Desktop\Daksh VIT\HACKATHON\.venv\Lib\site-packages\jinja2\utils.py", line 515, in __getitem__
+    rv = self._mapping[key]
+         ~~~~~~~~~~~~~^^^^^
+TypeError: unhashable type: 'dict'
