@@ -1,6 +1,6 @@
 """
 src/verify/risk_score.py — Applies penalty score thresholds based on verification.
-OWNER: Gemini
+
 """
 
 from src.types import DetectionResult, LeaseStatus, RiskLevel

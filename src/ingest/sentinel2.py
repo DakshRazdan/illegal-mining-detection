@@ -1,6 +1,6 @@
 """
 src/ingest/sentinel2.py — Downloads Sentinel-2 L2A optical data.
-OWNER: Gemini (Takes over Claude Code Terminal 1)
+
 
 Retrieves 7 bands for bi-temporal analysis via Microsoft Planetary Computer STAC.
 Saves before/after stacks to data/processed/.

@@ -1,6 +1,6 @@
 """
 src/verify/lease_check.py — Verifies detections against mining leases.
-OWNER: Gemini (Takes over Claude Code Terminal 2)
+
 
 Input: (lon, lat)
 Output: LeaseStatus, lease_id, company

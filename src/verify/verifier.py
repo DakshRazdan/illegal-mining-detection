@@ -1,6 +1,6 @@
 """
 src/verify/verifier.py — Orchestrates the full Verification Pipeline.
-OWNER: Gemini
+
 """
 
 from src.types import DetectionResult, VerificationResult, RiskLevel, LeaseStatus

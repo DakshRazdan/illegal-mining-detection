@@ -1,6 +1,6 @@
 """
 src/preprocess/cloud_mask.py — Applies SCL Scene Classification masking.
-OWNER: Gemini
+
 """
 
 import numpy as np

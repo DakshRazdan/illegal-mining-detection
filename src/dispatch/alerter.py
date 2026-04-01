@@ -1,6 +1,6 @@
 """
 src/dispatch/alerter.py — Alert dispatch via Twilio WhatsApp + SMS.
-OWNER: Antigravity Agent 3
+
 
 Dispatch chain (in order):
     1. Twilio WhatsApp  → if credentials present and alert qualifies

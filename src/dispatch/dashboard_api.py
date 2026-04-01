@@ -1,6 +1,5 @@
 """
 src/dispatch/dashboard_api.py — FastAPI ASGI app for the mining detection dashboard.
-OWNER: Antigravity Agent 3
 
 Run with:
     uvicorn src.dispatch.dashboard_api:app --reload --port 5000

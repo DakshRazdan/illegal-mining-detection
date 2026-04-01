@@ -1,6 +1,6 @@
 """
 src/verify/ec_check.py — Checks environmental clearances (EC).
-OWNER: Gemini
+
 """
 
 import json

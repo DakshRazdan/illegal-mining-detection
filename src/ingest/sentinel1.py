@@ -1,6 +1,6 @@
 """
 src/ingest/sentinel1.py — Downloads Sentinel-1 SAR footprint metadata.
-OWNER: Gemini
+
 
 Uses asf-search to find radar footprints. Returns a stub GRD array for hackathon demo speed if time-limited.
 """

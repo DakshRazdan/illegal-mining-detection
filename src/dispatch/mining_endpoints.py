@@ -1,6 +1,6 @@
 """
 src/dispatch/mining_endpoints.py — FastAPI router for mining data endpoints.
-OWNER: Antigravity Agent 3
+
 
 Mounts under /api/mining in dashboard_api.py.
 
