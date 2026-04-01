@@ -104,7 +104,7 @@ function initMap(aoiKey = 'jharkhand') {
   currentSites = REGION_SITES[aoiKey] || REGION_SITES.jharkhand;
 
   if (map) map.remove();
-  map = L.map('map', { center: AOI_CENTER[aoiKey], zoom: 9, zoomControl: false, attributionControl: false });
+  map = L.map('map', { center: AOI_CENTER[aoiKey], zoom: 10, zoomControl: false, attributionControl: false });
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, opacity: 0.85 }).addTo(map);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { maxZoom: 18, opacity: 0.5, subdomains: 'abcd' }).addTo(map);
@@ -173,6 +173,15 @@ function loadOSMBoundaries(aoiKey) {
         const ks = document.getElementById('kpi-sites');
         if (ks) ks.innerHTML = `${data.features.length} <span class="kpi-delta up">↑ OSM verified</span>`;
       }
+      // Zoom to actual OSM boundaries
+      try {
+        const allCoords = [];
+        data.features.forEach(f => {
+          if (f.geometry.type === 'Polygon') f.geometry.coordinates[0].forEach(c => allCoords.push([c[1], c[0]]));
+          else if (f.geometry.type === 'Point') allCoords.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+        });
+        if (allCoords.length > 0) map.fitBounds(L.latLngBounds(allCoords).pad(0.1), { maxZoom: 11 });
+      } catch (e) { }
     }).catch(() => { });
 }
 
@@ -200,7 +209,7 @@ function drawHotspots(sites) {
 }
 
 function loadRealHotspots() {
-  fetch(`${API_BASE}/api/mining/map?aoi=${currentAoi}`)
+  fetch(`${API_BASE}/api/mining/map`)
     .then(r => r.json())
     .then(data => {
       if (data.geojson && data.geojson.features.length > 0) {
@@ -231,6 +240,12 @@ function switchIndex(name, btn) {
   document.querySelectorAll('.idx-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   currentIndex = name;
+  if (indexOverlay) { map.removeLayer(indexOverlay); indexOverlay = null; }
+  if (currentAoi !== 'jharkhand') {
+    const ps = document.getElementById('pipeline-status');
+    if (ps) ps.textContent = 'Overlay available for Jharkhand only — run Colab for ' + AOI_LABELS[currentAoi];
+    return;
+  }
   const idx = parseInt(document.getElementById('time-slider').value);
   fetch(`${API_BASE}/api/temporal/frame/${idx}`)
     .then(r => r.json())
@@ -238,6 +253,7 @@ function switchIndex(name, btn) {
       const key = name + '_png_b64';
       const img = data[key] || data.ndvi_png_b64;
       if (img) overlayIndexImage(img);
+      else { const ps = document.getElementById('pipeline-status'); if (ps) ps.textContent = 'No ' + name.toUpperCase() + ' data cached'; }
     }).catch(() => { });
 }
 
@@ -370,7 +386,7 @@ function buildReportsPanel() {
 
 function loadReportsData() {
   /* Try real API first */
-  fetch(`${API_BASE}/api/mining/map?aoi=${currentAoi}`)
+  fetch(`${API_BASE}/api/mining/map`)
     .then(r => r.json())
     .then(data => {
       const features = data.geojson && data.geojson.features || [];
@@ -699,9 +715,57 @@ function refreshData() {
 
 document.getElementById('aoi-select').addEventListener('change', function () { initMap(this.value); });
 
+
+/* ════════════ RESIZABLE COLUMNS ════════════ */
+function initResizable() {
+  const layout = document.querySelector('.layout');
+  if (!layout) return;
+
+  let sidebarW = 248, rightW = 268;
+  layout.style.gridTemplateColumns = `${sidebarW}px 4px 1fr 4px ${rightW}px`;
+
+  function makeResizer(handleId, side) {
+    const handle = document.getElementById(handleId);
+    if (!handle) return;
+    let startX, startW;
+
+    handle.addEventListener('mousedown', e => {
+      startX = e.clientX;
+      startW = side === 'left' ? sidebarW : rightW;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const onMove = e => {
+        const dx = e.clientX - startX;
+        if (side === 'left') {
+          sidebarW = Math.max(180, Math.min(360, startW + dx));
+        } else {
+          rightW = Math.max(180, Math.min(380, startW - dx));
+        }
+        layout.style.gridTemplateColumns = `${sidebarW}px 4px 1fr 4px ${rightW}px`;
+      };
+      const onUp = () => {
+        handle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        if (map) map.invalidateSize();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  makeResizer('resize-left', 'left');
+  makeResizer('resize-right', 'right');
+}
+
 /* ════════════ BOOT ════════════ */
 window.addEventListener('DOMContentLoaded', () => {
   currentSites = REGION_SITES.jharkhand;
+  initResizable();
   initMap('jharkhand');
   document.getElementById('left-panels').innerHTML = buildDashboardPanel();
   renderAlerts(REGION_ALERTS.jharkhand);

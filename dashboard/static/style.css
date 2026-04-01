@@ -155,12 +155,7 @@ body {
     color: var(--text-muted);
 }
 
-.layout {
-    display: grid;
-    grid-template-columns: var(--sidebar-w) 1fr var(--right-w);
-    height: calc(100vh - var(--topbar-h));
-    margin-top: var(--topbar-h);
-}
+/* layout handled by JS resize */
 
 .sidebar-left {
     background: var(--bg-panel);
@@ -740,4 +735,38 @@ input[type="range"]::-webkit-slider-thumb {
 
 .popup-row span {
     color: var(--text-primary);
+}
+
+/* ─── RESIZABLE COLUMNS ─── */
+.layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr var(--right-w);
+    height: calc(100vh - var(--topbar-h));
+    margin-top: var(--topbar-h);
+}
+
+.resize-handle {
+    width: 4px;
+    cursor: col-resize;
+    background: var(--border);
+    transition: background 0.15s;
+    z-index: 100;
+    position: relative;
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+    background: var(--accent-amber);
+}
+
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 32px;
+    border-left: 1px solid rgba(240, 165, 0, 0.3);
+    border-right: 1px solid rgba(240, 165, 0, 0.3);
 }
