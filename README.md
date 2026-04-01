@@ -1,62 +1,40 @@
-# 🛰️ Autonomous Illegal Mining Detection System (AIMDS)
+Autonomous Illegal Mining Detection System (AIMDS)
 
-> **Zero-Latency Agentic Verification Loop**
-> Detecting a hole in the ground is easy. Knowing if it's legal in real-time is hard.
+An end-to-end agentic remote sensing pipeline for real-time detection and regulatory verification of unauthorized mining activity.
 
----
 
-## 🚀 The Differentiator
-Most remote sensing systems stop at detection. **AIMDS** is an autonomous agentic system that doesn't just detect changes via satellite—it verifies them.
+Overview
+AIMDS extends conventional satellite change-detection by introducing an autonomous verification loop. Each detected excavation anomaly is programmatically cross-referenced against three authoritative regulatory datasets before any alert is issued:
 
-Every detected crater is automatically cross-referenced against:
-1. **State Mining Leases:** Is this actually inside a registered mine?
-2. **Environmental Clearances (MoEFCC):** If it is registered, does it have an active EC that hasn't expired?
-3. **Land Records:** Is this protected forest or tribal land?
+State Mining Leases — Determines whether the detected activity falls within a registered mine boundary.
+Environmental Clearances (MoEFCC) — Validates whether an applicable lease holds a current, non-expired Environmental Clearance.
+Land Records — Flags activity occurring within protected forest zones or scheduled tribal land.
 
-Only if the system mathematically proves the activity is **Illegal** and hits the `CRITICAL` risk threshold does it dispatch a live Twilio WhatsApp/SMS alert to the District Magistrate. False positives disappear. Actionable intelligence remains.
+Alerts are dispatched via Twilio (WhatsApp/SMS) to the concerned District Magistrate exclusively when the system classifies a detection as both verified illegal and CRITICAL risk. This design eliminates false-positive fatigue and ensures that every notification represents actionable intelligence.
 
----
+Technology Stack
+LayerLibraries & ToolsAI / MLPyTorch, segmentation-models-pytorch (U-Net), Ultralytics YOLOv11, scikit-learnGeospatialpystac-client, rasterio, GeoPandas, Sentinel-2 L2A STAC, Sentinel-1 SARBackendFastAPI, Uvicorn, PostgreSQL + PostGIS (Docker)FrontendVanilla WebGL / Three.js, Jinja2 Templates, Tailwind CSS
+The frontend is rendered server-side via Python Jinja2 templates and requires no Node.js runtime.
 
-## 💻 Tech Stack
-- **AI/ML Layer (Python):** `PyTorch`, `segmentation-models-pytorch` (U-Net), `ultralytics` (YOLOv11), `scikit-learn` (Spectral K-Means)
-- **Geospatial (Python):** `pystac-client`, `rasterio`, `geopandas`, Sentinel-2 L2A STAC, Sentinel-1 SAR
-- **Backend:** `FastAPI`, `Uvicorn`, PostgreSQL/PostGIS (Docker)
-- **Frontend / Command Center:** Glassmorphic Vanilla WebGL / Three.js driven completely via Python Jinja Templates & Tailwind CSS. No Node.js required.
-
----
-
-## ⚡ Quickstart (Demo Mode)
-
-We built an end-to-end synthetic data generator so you can test the **entire verification pipeline and 3D dashboard** without downloading gigabytes of satellite imagery or needing a GPU.
-
-**1. Install Dependencies**
-```bash
-pip install -r requirements.txt
+Quickstart — Synthetic Demo Mode
+A synthetic data generator is included to demonstrate the complete verification pipeline and 3D command dashboard without requiring GPU hardware or satellite imagery downloads.
+Step 1 — Install dependencies
+bashpip install -r requirements.txt
+Step 2 — Generate synthetic detections and run the verification pipeline
+bashpython scripts/demo.py --synthetic
+This script simulates a multi-band Sentinel-2 acquisition over Jharkhand, generates randomised detections, runs them through the full regulatory verification workflow, scores each detection, and writes the output to disk.
+Step 3 — Launch the command dashboard
+bashuvicorn src.dispatch.dashboard_api:app --reload --port 5000
 ```
 
-**2. Generate Detections & Run Verification (Synthetic Demo)**
-```bash
-python scripts/demo.py --synthetic
-```
-*(This simulates Sentinel-2 data, generates random detections across Jharkhand, cross-checks them against GeoJSON leases, scores them, and writes the output).*
-
-**3. Launch the ISRO Command Center Dashboard**
-```bash
-uvicorn src.dispatch.dashboard_api:app --reload --port 5000
-```
-Open [http://127.0.0.1:5000/](http://127.0.0.1:5000/) in your browser.
-
-> You will see a mesmerizing 3D wireframe globe, real-time telemetry, and a live verification feed filtering detections into *Illegal* and *Legal* categories.
+Navigate to [http://127.0.0.1:5000/](http://127.0.0.1:5000/) to access the interactive 3D dashboard, real-time telemetry panel, and live verification feed.
 
 ---
 
-## 🧠 Core Architecture Flow
+## System Architecture
+```
+Ingest → Detect → Verify → Dispatch
+StageModuleDescriptionIngestsrc/ingestRetrieves bi-temporal 7-band Sentinel-2 image stacks via Microsoft Planetary Computer STACDetectsrc/detectEnsemble fusion of Spectral Random Forest anomaly detection, U-Net semantic segmentation, and YOLOv11 object detectionVerifysrc/verifyAutonomous agent cross-references detections against lease_boundaries/jharkhand_sample.geojson and ec_records.jsonDispatchsrc/dispatchFormats high-risk verified detections into structured alerts; FastAPI exposes results as a JSON API
 
-1. **Ingest (`src/ingest`)** — Pulls bi-temporal 7-band Sentinel-2 stacks via Microsoft Planetary Computer STAC.
-2. **Detect (`src/detect`)** — Ensemble weighted fusion. Spectral Random Forest anomalies form the baseline, reinforced by semantic deep learning (U-Net) and object detection (YOLOv11).
-3. **Verify (`src/verify`)** — The autonomous agent checks `lease_boundaries/jharkhand_sample.geojson` and `ec_records.json`.
-4. **Dispatch (`src/dispatch`)** — High-Risk items formatted into critical alerts. FastAPI serves the results via JSON. 
-
----
-
-### *Built under extreme time pressure for Hackathon 2026.*
+Acknowledgements
+Developed for Hackathon 2026.
